@@ -1,0 +1,171 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    background-color: rgba(0, 0, 0, 0.7);
+  }
+}
+
+.modal-container {
+  width: 100%;
+  max-width: 500px;
+  max-height: 85vh;
+  background-color: #2a2a3e;
+  border-radius: 20px 20px 0 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+@keyframes slideUp {
+  to {
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #3a3a4e;
+}
+
+.modal-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ffffff;
+  margin: 0;
+}
+
+.close-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  background-color: #3a3a4e;
+  border: none;
+  color: #a0a0b0;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+.close-button:hover {
+  background-color: #4a4a5e;
+}
+
+.modal-content {
+  padding: 20px;
+  padding-bottom: 0;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.error-container {
+  background-color: #DC2626;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.error-text {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  margin: 0;
+}
+
+.input-container {
+  margin-bottom: 20px;
+}
+
+.input-label {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: #a0a0b0;
+  margin-bottom: 8px;
+}
+
+.input {
+  width: 100%;
+  background-color: #1a1a2e;
+  border: 1px solid #3a3a4e;
+  border-radius: 12px;
+  padding: 15px;
+  font-size: 16px;
+  color: #ffffff;
+  font-family: inherit;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #DC2626;
+}
+
+.input-error {
+  border-color: #DC2626;
+  border-width: 2px;
+}
+
+.button-container {
+  background-color: #2a2a3e;
+  padding: 15px 20px 20px 20px;
+  border-top: 1px solid #3a3a4e;
+  position: sticky;
+  bottom: 0;
+}
+
+.save-button {
+  width: 100%;
+  background-color: #DC2626;
+  color: #ffffff;
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.save-button:hover {
+  background-color: #ef4444;
+}
+
+.reset-button {
+  width: 100%;
+  background-color: transparent;
+  color: #a0a0b0;
+  border: none;
+  padding: 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.2s;
+  margin-top: 8px;
+}
+
+.reset-button:hover {
+  color: #ffffff;
+}
+
