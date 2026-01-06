@@ -449,7 +449,7 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues }: Dice3DProps) 
         <meshStandardMaterial 
           color={0xFFFFFF}
           roughness={0.3}
-          metalness={0}
+          metalness={0.3}
           envMapIntensity={0.5}
         />
       </mesh>
@@ -473,16 +473,16 @@ export default function Dice3D(props: Dice3DProps) {
       shadows
     >
       <color attach="background" args={['#1a1a2e']} />
-      <ambientLight intensity={0.8} />
+      <ambientLight intensity={1.5} />
       <directionalLight 
         position={[5, 5, 5]} 
-        intensity={1.5}
+        intensity={2.5}
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
       />
-      <directionalLight position={[-3, -3, -3]} intensity={0.4} />
-      <directionalLight position={[0, -3, 3]} intensity={0.3} />
+      <directionalLight position={[-3, -3, -3]} intensity={0.7} />
+      <directionalLight position={[0, -3, 3]} intensity={1} />
       <DiceMesh {...props} />
     </Canvas>
   );
