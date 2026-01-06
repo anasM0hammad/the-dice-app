@@ -73,9 +73,9 @@ export default function DicePage() {
       </div>
 
       <div className="result-container">
-        <p className="result-label">Result</p>
+        {/* <p className="result-label">Result</p> */}
         <p className="result-number">
-          {hasCustomValues ? customFaceValues[currentNumber - 1] : currentNumber}
+          {!isRolling ?  (hasCustomValues ? customFaceValues[currentNumber - 1] : currentNumber) : ('...')}
         </p>
       </div>
 
