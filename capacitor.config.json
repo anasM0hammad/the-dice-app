@@ -1,15 +1,16 @@
 {
-  "appId": "com.thedice.app",
-  "appName": "The Dice",
+  "appId": "com.anaslyzer.thedice",
+  "appName": "Dice 3D",
   "webDir": "dist",
   "bundledWebRuntime": false,
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 2000,
-      "backgroundColor": "#1a1a2e",
+      "launchAutoHide": true,
+      "backgroundColor": "#2b323e",
       "androidSplashResourceName": "splash",
       "iosSplashResourceName": "splash",
-      "showSpinner": false,
+      "showSpinner": true,
       "androidScaleType": "CENTER_CROP",
       "splashFullScreen": true,
       "splashImmersive": true
