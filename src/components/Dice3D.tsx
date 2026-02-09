@@ -1,6 +1,7 @@
-import React, { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import ErrorBoundary from './ErrorBoundary';
 
 interface Dice3DProps {
   isRolling: boolean;
@@ -36,9 +37,10 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues }: Dice3DProps) 
   const tumbleDirectionRef = useRef({ x: 1.3, y: 0.9, z: 0.4 });
   const tumbleSpeedRef = useRef(18);
   const isRollingRef = useRef(isRolling);
+  const texturesCacheRef = useRef<Map<string, THREE.DataTexture>>(new Map());
   const [, forceUpdate] = useState({});
   
-  const { camera, gl } = useThree();
+  const { gl } = useThree();
 
   useEffect(() => {
     isRollingRef.current = isRolling;
@@ -60,7 +62,7 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues }: Dice3DProps) 
   useEffect(() => {
     const canvas = gl.domElement;
     
-    const handlePointerDown = (e: PointerEvent) => {
+    const handlePointerDown = (_e: PointerEvent) => {
       if (!isRollingRef.current) {
         isDraggingRef.current = true;
         velocityRef.current = { x: 0, y: 0 };
@@ -105,9 +107,19 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues }: Dice3DProps) 
 
   useEffect(() => {
     if (diceGroupRef.current && !isRollingRef.current) {
+      // Clear stale cached textures when custom values change
+      texturesCacheRef.current.forEach(t => t.dispose());
+      texturesCacheRef.current.clear();
       forceUpdate({});
     }
   }, [customFaceValues]);
+
+  useEffect(() => {
+    return () => {
+      texturesCacheRef.current.forEach(t => t.dispose());
+      texturesCacheRef.current.clear();
+    };
+  }, []);
 
   const createTextTexture = (text: string): THREE.DataTexture => {
     const size = 128;
@@ -308,7 +320,12 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues }: Dice3DProps) 
         position = [0, 0, 0];
     }
 
-    const texture = createTextTexture(text);
+    const cacheKey = `${faceIndex}-${text}`;
+    let texture = texturesCacheRef.current.get(cacheKey);
+    if (!texture) {
+      texture = createTextTexture(text);
+      texturesCacheRef.current.set(cacheKey, texture);
+    }
 
     return (
       <mesh key={`text-${faceIndex}`} position={position} rotation={rotation}>
@@ -346,7 +363,7 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues }: Dice3DProps) 
     return topFaceIndex + 1;
   };
 
-  useFrame((state, delta) => {
+  useFrame((_state, delta) => {
     if (!diceGroupRef.current) return;
 
     if (isRollingRef.current) {
@@ -457,7 +474,7 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues }: Dice3DProps) 
       {hasCustomValues ? (
         customFaceValues!.map((text, index) => createTextPlane(text, index))
       ) : (
-        Object.entries(diceFaces).map(([faceNum, dots], faceIndex) => 
+        Object.entries(diceFaces).map(([, dots], faceIndex) =>
           dots.map((dot) => createDot(dot, faceIndex))
         )
       )}
@@ -465,26 +482,70 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues }: Dice3DProps) 
   );
 }
 
-export default function Dice3D(props: Dice3DProps) {
+function isWebGLAvailable(): boolean {
+  try {
+    const canvas = document.createElement('canvas');
+    return !!(
+      window.WebGLRenderingContext &&
+      (canvas.getContext('webgl') || canvas.getContext('webgl2'))
+    );
+  } catch {
+    return false;
+  }
+}
+
+function WebGLFallback() {
   return (
-    <Canvas
-      camera={{ position: [0, 0, 6], fov: 50 }}
-      style={{ width: '100%', height: '100%', touchAction: 'none' }}
-      shadows
-    >
-      <color attach="background" args={['#1a1a2e']} />
-      <ambientLight intensity={1.5} />
-      <directionalLight 
-        position={[5, 5, 5]} 
-        intensity={2.5}
-        castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-      />
-      <directionalLight position={[-3, -3, -3]} intensity={0.7} />
-      <directionalLight position={[0, -3, 3]} intensity={1} />
-      <DiceMesh {...props} />
-    </Canvas>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '100%',
+      color: '#a0a0b0',
+      textAlign: 'center',
+      padding: '20px',
+    }}>
+      <p style={{ fontSize: '48px', marginBottom: '16px' }}>🎲</p>
+      <p style={{ fontSize: '18px', marginBottom: '8px', color: '#DC2626' }}>
+        3D Not Supported
+      </p>
+      <p style={{ fontSize: '14px' }}>
+        Your device does not support WebGL, which is required for 3D graphics.
+        Please update your Android System WebView or try a different device.
+      </p>
+    </div>
+  );
+}
+
+export default function Dice3D(props: Dice3DProps) {
+  const [webGLSupported] = useState(() => isWebGLAvailable());
+
+  if (!webGLSupported) {
+    return <WebGLFallback />;
+  }
+
+  return (
+    <ErrorBoundary>
+      <Canvas
+        camera={{ position: [0, 0, 6], fov: 50 }}
+        style={{ width: '100%', height: '100%', touchAction: 'none' }}
+        shadows
+      >
+        <color attach="background" args={['#1a1a2e']} />
+        <ambientLight intensity={1.5} />
+        <directionalLight
+          position={[5, 5, 5]}
+          intensity={2.5}
+          castShadow
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+        />
+        <directionalLight position={[-3, -3, -3]} intensity={0.7} />
+        <directionalLight position={[0, -3, 3]} intensity={1} />
+        <DiceMesh {...props} />
+      </Canvas>
+    </ErrorBoundary>
   );
 }
 

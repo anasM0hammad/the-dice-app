@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './CustomFacesModal.css';
 
 interface CustomFacesModalProps {
@@ -13,12 +13,35 @@ export default function CustomFacesModal({ visible, onClose, onSave, initialValu
     initialValues && initialValues.length === 6 ? initialValues : ['', '', '', '', '', '']
   );
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (visible && initialValues && initialValues.length === 6) {
       setFaceValues(initialValues);
     }
   }, [visible, initialValues]);
+
+  useEffect(() => {
+    if (!visible) return;
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const handleResize = () => {
+      if (overlayRef.current) {
+        overlayRef.current.style.height = `${viewport.height}px`;
+      }
+    };
+
+    viewport.addEventListener('resize', handleResize);
+    handleResize();
+
+    return () => {
+      viewport.removeEventListener('resize', handleResize);
+      if (overlayRef.current) {
+        overlayRef.current.style.height = '';
+      }
+    };
+  }, [visible]);
 
   const handleFaceChange = (index: number, value: string) => {
     const newValues = [...faceValues];
@@ -58,7 +81,7 @@ export default function CustomFacesModal({ visible, onClose, onSave, initialValu
   if (!visible) return null;
 
   return (
-    <div className="modal-overlay" onClick={handleClose}>
+    <div className="modal-overlay" ref={overlayRef} onClick={handleClose}>
       <div className="modal-container" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2 className="modal-title">Custom Faces</h2>

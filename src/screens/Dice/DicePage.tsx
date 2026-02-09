@@ -1,14 +1,24 @@
-import React, { useState, useRef, useEffect } from 'react';
-import Dice3D from '../../components/Dice3D';
+import { useState, useRef, useEffect, lazy, Suspense, useCallback } from 'react';
 import CustomFacesModal from './CustomFacesModal';
 import './DicePage.css';
+
+const Dice3D = lazy(() => import('../../components/Dice3D'));
+
+const ROLL_COUNT_KEY = 'dice_roll_count';
+const REVIEW_DISMISSED_KEY = 'dice_review_dismissed';
+const REVIEW_THRESHOLD = 10;
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.anaslyzer.thedice';
 
 export default function DicePage() {
   const [isRolling, setIsRolling] = useState(false);
   const [currentNumber, setCurrentNumber] = useState(1);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [customFaceValues, setCustomFaceValues] = useState<string[]>([]);
+  const [showReviewPrompt, setShowReviewPrompt] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const rollCountRef = useRef(
+    parseInt(localStorage.getItem(ROLL_COUNT_KEY) || '0', 10)
+  );
 
   useEffect(() => {
     // Pre-load audio
@@ -16,7 +26,7 @@ export default function DicePage() {
     audio.volume = 0.5;
     audio.load();
     audioRef.current = audio;
-    
+
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -39,10 +49,18 @@ export default function DicePage() {
     }
   };
 
-  const handleRollComplete = (result: number) => {
+  const handleRollComplete = useCallback((result: number) => {
     setIsRolling(false);
     setCurrentNumber(result);
-  };
+
+    rollCountRef.current += 1;
+    localStorage.setItem(ROLL_COUNT_KEY, String(rollCountRef.current));
+
+    const dismissed = localStorage.getItem(REVIEW_DISMISSED_KEY);
+    if (rollCountRef.current === REVIEW_THRESHOLD && !dismissed) {
+      setShowReviewPrompt(true);
+    }
+  }, []);
 
   const handleCustomFacesSave = (faceValues: string[]) => {
     setCustomFaceValues(faceValues);
@@ -65,11 +83,17 @@ export default function DicePage() {
       </div>
 
       <div className="dice-container">
-        <Dice3D 
-          isRolling={isRolling} 
-          onRollComplete={handleRollComplete}
-          customFaceValues={hasCustomValues ? customFaceValues : undefined}
-        />
+        <Suspense fallback={
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#a0a0b0' }}>
+            Loading 3D engine...
+          </div>
+        }>
+          <Dice3D
+            isRolling={isRolling}
+            onRollComplete={handleRollComplete}
+            customFaceValues={hasCustomValues ? customFaceValues : undefined}
+          />
+        </Suspense>
       </div>
 
       <div className="result-container">
@@ -97,6 +121,36 @@ export default function DicePage() {
         onSave={handleCustomFacesSave}
         initialValues={customFaceValues}
       />
+
+      {showReviewPrompt && (
+        <div className="review-overlay">
+          <div className="review-card">
+            <p className="review-title">Enjoying The Dice?</p>
+            <p className="review-subtitle">You have rolled {REVIEW_THRESHOLD} times! Would you like to rate us on the Play Store?</p>
+            <div className="review-buttons">
+              <button
+                className="review-btn review-btn-primary"
+                onClick={() => {
+                  window.open(PLAY_STORE_URL, '_blank');
+                  localStorage.setItem(REVIEW_DISMISSED_KEY, '1');
+                  setShowReviewPrompt(false);
+                }}
+              >
+                Rate Now
+              </button>
+              <button
+                className="review-btn review-btn-secondary"
+                onClick={() => {
+                  localStorage.setItem(REVIEW_DISMISSED_KEY, '1');
+                  setShowReviewPrompt(false);
+                }}
+              >
+                Maybe Later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
