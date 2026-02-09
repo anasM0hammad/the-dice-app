@@ -17,7 +17,7 @@ yarn-error.log*
 .env.production.local
 
 # Capacitor
-android/
+# android/
 ios/
 .capacitor/
 
