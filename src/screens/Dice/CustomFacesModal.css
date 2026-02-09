@@ -3,13 +3,14 @@
   top: 0;
   left: 0;
   width: 100vw;
-  height: 100vh;
+  height: 100%;
   background-color: rgba(0, 0, 0, 0);
   display: flex;
   justify-content: center;
   align-items: flex-end;
   z-index: 1000;
   animation: fadeIn 0.3s ease-out forwards;
+  touch-action: auto;
 }
 
 @keyframes fadeIn {
@@ -21,7 +22,7 @@
 .modal-container {
   width: 100%;
   max-width: 500px;
-  max-height: 85vh;
+  max-height: 85%;
   background-color: #2a2a3e;
   border-radius: 20px 20px 0 0;
   overflow: hidden;
@@ -78,6 +79,8 @@
   overflow-y: auto;
   flex: 1;
   min-height: 0;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 
 .error-container {
