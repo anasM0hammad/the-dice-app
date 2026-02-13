@@ -46,10 +46,16 @@ A comprehensive update focused on premium feel, better UX flow, ad strategy over
 **Files**: `src/screens/Dice/DicePage.tsx`, `src/screens/Dice/DicePage.css`
 
 - When custom face values are active (applied from Create Dice modal), show a **"Save This Dice"** button on the main page (positioned subtly, e.g., below the result or near the roll button)
-- Tapping this button navigates to ConfigManagerPage with the current face values pre-filled
-- User only needs to enter a name and tap save
 - Button should have a subtle animation (fade in) when custom values are applied
 - Button disappears when dice is reset to standard
+
+#### Save Limit Awareness (limit: 10)
+- The button must be **save-limit-aware** using `canAddMore()` from configStorage
+- **When limit NOT reached**: Show button as `"Save This Dice (3/10)"` — tappable, navigates to ConfigManagerPage with face values pre-filled
+- **When limit IS reached (10/10)**: Show button in a **disabled/dimmed state** with text `"Save limit reached (10/10)"` — not tappable
+  - Below the disabled button, show a subtle link: **"Manage saved dices →"** that navigates to ConfigManagerPage (list view, not create mode)
+  - This gives the user a clear path: go delete one, then come back and save
+- The count (`X/10`) updates reactively — after deleting a config and returning, button becomes active again
 
 ### 2.3 Pre-fill Config Page
 **Files**: `src/screens/ConfigManager/ConfigManagerPage.tsx`
@@ -58,6 +64,17 @@ A comprehensive update focused on premium feel, better UX flow, ad strategy over
 - When present, open directly in "create" mode with values pre-filled
 - Name field focused and empty, ready for user input
 - User taps save → config saved → navigate back to dice page with config active
+
+### 2.4 Navigation Enhancement for Pre-fill
+**Files**: `src/App.tsx`
+
+- Extend the `Page` type or add navigation state to support passing `prefillValues` when navigating from DicePage to ConfigManagerPage
+- Example approach:
+  ```typescript
+  type Page = 'dice' | 'configs';
+  interface NavState { prefillValues?: string[]; }
+  ```
+- ConfigManagerPage receives `prefillValues` prop and auto-opens create form when present
 
 ---
 
@@ -82,12 +99,18 @@ A comprehensive update focused on premium feel, better UX flow, ad strategy over
   - "No saved dices yet"
   - "Create your first custom dice" with a CTA button that opens Create Dice
 
-### 3.3 Page Header
+### 3.3 Page Header & Config Count
 - Clean header with back arrow and title "Saved Dices"
-- Config count shown subtly (e.g., "3 of 5")
+- Config count shown subtly: **"3 of 10"** (updated from 5 → 10)
 - "Create New" floating action button or prominent button at top/bottom
+- When at limit (10/10), count text turns amber/warning color and "Create New" button is disabled with tooltip-style text: "Delete a dice to create a new one"
 
-### 3.4 Overall Polish
+### 3.4 Delete Confirmation
+- **Currently missing**: Delete is immediate with no confirmation — risky for users
+- Add a lightweight confirmation: brief bottom sheet or inline "Are you sure? [Yes] [No]" that replaces the card's action row
+- This avoids accidental deletion, especially important since limit is now 10 (more invested configs)
+
+### 3.5 Overall Polish
 - Better spacing and padding
 - Subtle card shadows/elevation
 - Smooth list animations (cards fade/slide in)
@@ -309,7 +332,7 @@ A comprehensive update focused on premium feel, better UX flow, ad strategy over
 
 ## Phase 9: Haptic Feedback & Sound Toggle
 
-### 8.1 Haptic Feedback
+### 9.1 Haptic Feedback
 **New File**: `src/utils/haptics.ts`
 
 - Add `@capacitor/haptics` dependency
@@ -320,7 +343,7 @@ A comprehensive update focused on premium feel, better UX flow, ad strategy over
   - **Config activated/deactivated**: Notification success
 - Graceful fallback: no-op on web/unsupported devices
 
-### 8.2 Sound Toggle
+### 9.2 Sound Toggle
 **Files**: `src/screens/Dice/DicePage.tsx`
 
 - Add sound on/off icon button in the header (next to hamburger)
@@ -333,20 +356,20 @@ A comprehensive update focused on premium feel, better UX flow, ad strategy over
 
 ## Phase 10: Overall UI Polish
 
-### 9.1 Global Design Improvements
+### 10.1 Global Design Improvements
 - Consistent border-radius across all components (12px for cards, 24px for buttons, 50% for circles)
 - Subtle shadows and elevation system (3 levels: low, medium, high)
 - Consistent animation timing (0.2s for micro-interactions, 0.3s for transitions, 0.5s for page changes)
 - Button press states (scale down slightly on tap)
 
-### 9.2 Main Page (DicePage) Polish
+### 10.2 Main Page (DicePage) Polish
 - Remove any banner ad spacing
 - Better typography for the result number (larger, bolder, with subtle animation on change)
 - Instruction text with better hierarchy
 - "Save This Dice" button animation
 - Smooth page transitions to/from other screens
 
-### 9.3 Transitions
+### 10.3 Transitions
 - Page transitions: slide in from right (forward), slide out to right (back)
 - Modal transitions: slide up from bottom (already exists, refine timing)
 - Sidebar: already has slide, refine easing curve
@@ -359,7 +382,7 @@ The recommended order optimizes for building foundational changes first:
 
 1. **Phase 1**: Sidebar & Icon System — foundation for everything else
 2. **Phase 10**: UI Polish — establish design language early
-3. **Phase 2**: Create Dice flow — core feature rework
+3. **Phase 2**: Create Dice flow — core feature rework (includes save limit UX)
 4. **Phase 3**: Saved Dices redesign — depends on new design language
 5. **Phase 8**: Roll History — lightweight addition to main page
 6. **Phase 9**: Haptics & Sound — quick wins, immediate feel improvement
@@ -374,6 +397,53 @@ The recommended order optimizes for building foundational changes first:
 
 - **State Management**: Continue using React local state + localStorage. No need for Redux/Zustand for this app size.
 - **Navigation**: Continue using the current simple page switching in App.tsx. Add support for passing props (prefill values) during navigation.
+- **Save Limit**: Increased from 5 → **10** in `configStorage.ts` (`MAX_CONFIGS = 10`). Update all references: ConfigManagerPage footer count, error messages, and new "Save This Dice" button count display.
 - **Assets**: Texture images for dice skins (wood, marble) need to be created or sourced. Keep them small (256x256 or 512x512 max) for performance.
 - **Testing**: Test on both Android and web. Camera/gallery features need device testing.
 - **Ad IDs**: Keep test IDs during development. Switch to production IDs only for release builds.
+
+---
+
+## Deep Review: Issues, Suggestions & New Feature Ideas
+
+### Critical Issues Found in Current Codebase
+
+1. **No delete confirmation** — `handleDelete` in ConfigManagerPage immediately removes the config with zero confirmation. One accidental tap and the config is gone. This is especially bad since users can only have 10 configs (was 5) and may have invested time creating them. **Fix**: Added Phase 3.4 for delete confirmation.
+
+2. **Review prompt is "once in a lifetime"** — The "Rate on Play Store" prompt at 10 rolls stores `dice_review_dismissed: '1'` permanently. If user taps "Maybe Later", they can never be prompted again, even if they become a power user at 500 rolls. **Suggestion**: Instead of a permanent dismiss, re-prompt at higher thresholds (e.g., 50, 200 rolls) up to 3 times max. Store a dismiss count instead of a boolean flag.
+
+3. **CustomFacesModal uses `alert()`** — Line 61 of CustomFacesModal.tsx calls `alert('Please fill in all 6 face values...')` which is a jarring native browser dialog on top of the already-rendered error message. **Fix**: Remove the `alert()` call; the inline error message is sufficient.
+
+4. **Navigation loses state** — When navigating from DicePage → ConfigManagerPage → back to DicePage, the DicePage component unmounts and remounts. This means:
+   - Custom face values applied via the modal (but not saved) are lost
+   - Roll history (if added) would reset
+   - The dice position/rotation resets
+   **Suggestion**: Either keep both pages mounted (with CSS display toggle) or lift shared state to App.tsx to persist across navigation.
+
+5. **Hardcoded "5" in multiple places** — The `MAX_CONFIGS = 5` constant exists in configStorage.ts, but ConfigManagerPage hardcodes `"5 / 5 configurations"` and `"Maximum 5 configurations reached"` as literal strings. **Fix**: Export `MAX_CONFIGS` and reference it in all UI strings.
+
+6. **Orphaned active config** — If the user manually clears localStorage for configs but not for `dice_active_config_id`, the DicePage will try to load a non-existent config on mount. Currently it fails silently (good), but the stale active ID stays forever. **Suggestion**: In configStorage, add a validation: if `getActiveConfigId()` points to a non-existent config, auto-clear it.
+
+### Better Approaches for Existing Plan Items
+
+1. **Phase 2.2 — "Save This Dice" navigation flow**: The current plan navigates to ConfigManagerPage to save. A smoother alternative: show a **compact inline modal/bottom sheet** right on DicePage with just a name input + "Save" button. No page navigation needed. This keeps the user on the main page, feels faster, and avoids the state-loss issue from navigation. The full ConfigManagerPage is still for browsing/managing all saved dices.
+
+2. **Phase 4 — Image Dice session-only limitation**: Instead of being purely session-only, consider saving image references to **IndexedDB** (not localStorage, which can't store blobs efficiently). This way images persist across app restarts but can be cleared by the user. Mark this as a stretch goal since the basic session-only approach works fine for v2.0.
+
+3. **Phase 5 — 24-hour unlock window for skins**: This is a proven mobile game pattern, but 24 hours might feel punishing for users who only open the app occasionally. Consider **48 hours** or even **7 days** — the goal is to drive ad revenue from new unlocks while not frustrating users who liked a skin.
+
+4. **Phase 6.3 — Interstitial after navigating back from pages**: Showing an ad when the user navigates back to the dice feels punishing and breaks flow. Better trigger: show interstitial only on **forward navigation** (opening a page) or on **natural pause points** (after a batch of rolls), not when the user is returning to their primary activity.
+
+5. **Phase 7 — Onboarding step 2 "Drag to Explore"**: Requiring the user to actually drag enough is fragile — what counts as "sufficient rotation"? Make this step auto-complete after ~3 seconds OR after any touch interaction on the dice. Keep the barrier low.
+
+### New Feature Ideas (Low Complexity)
+
+1. **Quick Dice Switcher on Main Page** — When the user has saved dices, show a small horizontal pill/chip bar at the top of DicePage (below the title) with the names of saved dices. Tap a pill → instantly switch active config. Tap the active pill again → deactivate (go back to standard). This eliminates the need to open Sidebar → Saved Dices → tap config → go back, which is currently 4 steps reduced to 1 tap. Implementation: a simple horizontal ScrollView reading from `getConfigs()`, very lightweight.
+
+2. **"Share Roll" Button** — After rolling, show a subtle share icon next to the result. Tapping it uses the Web Share API (`navigator.share`) or Capacitor Share plugin to share a message like "I rolled a 4 on The Dice! 🎲". Costs almost nothing to implement, adds social/viral potential.
+
+3. **Multi-Dice Mode** — Instead of a single dice, allow rolling 2 dice simultaneously. Toggle between 1-die and 2-dice mode from the main page. This is the #1 feature users expect from dice apps and is currently missing. Implementation: duplicate the Dice3D component with a slight position offset, sum results. Moderate complexity but very high value.
+
+4. **Dice Roll Statistics** — Extend the roll history to also show a tiny stats summary: total rolls this session, most common face, distribution bar (6 tiny bars showing frequency of each face). This appeals to board gamers and "is the dice fair?" curiosity. All computed from the existing roll history array — no new storage needed.
+
+5. **Long-Press to Preview** — On the Saved Dices page, long-pressing a card shows a preview overlay: a small 3D dice render showing what that config looks like on the actual dice. Uses the same Dice3D component in a small viewport. Helps users remember which config is which without activating it.
