@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect, lazy, Suspense, useCallback } from 'react';
 import CustomFacesModal from './CustomFacesModal';
+import Sidebar from '../../components/Sidebar';
+import { useShakeDetection } from '../../hooks/useShakeDetection';
+import { getActiveConfigId, getConfigById } from '../../utils/configStorage';
 import './DicePage.css';
 
 const Dice3D = lazy(() => import('../../components/Dice3D'));
@@ -9,16 +12,32 @@ const REVIEW_DISMISSED_KEY = 'dice_review_dismissed';
 const REVIEW_THRESHOLD = 10;
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.anaslyzer.thedice';
 
-export default function DicePage() {
+interface DicePageProps {
+  onNavigateToConfigs: () => void;
+}
+
+export default function DicePage({ onNavigateToConfigs }: DicePageProps) {
   const [isRolling, setIsRolling] = useState(false);
   const [currentNumber, setCurrentNumber] = useState(1);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [customFaceValues, setCustomFaceValues] = useState<string[]>([]);
   const [showReviewPrompt, setShowReviewPrompt] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rollCountRef = useRef(
     parseInt(localStorage.getItem(ROLL_COUNT_KEY) || '0', 10)
   );
+
+  // Auto-apply active saved config on mount
+  useEffect(() => {
+    const activeId = getActiveConfigId();
+    if (activeId) {
+      const config = getConfigById(activeId);
+      if (config) {
+        setCustomFaceValues(config.faceValues);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     // Pre-load audio
@@ -42,12 +61,15 @@ export default function DicePage() {
     }
   };
 
-  const handleRoll = () => {
+  const handleRoll = useCallback(() => {
     if (!isRolling) {
       setIsRolling(true);
       playSound();
     }
-  };
+  }, [isRolling]);
+
+  // Shake-to-roll on mobile devices
+  useShakeDetection(handleRoll, { threshold: 25, cooldown: 3500 });
 
   const handleRollComplete = useCallback((result: number) => {
     setIsRolling(false);
@@ -70,16 +92,22 @@ export default function DicePage() {
 
   return (
     <div className="dice-page">
+      <button className="hamburger-btn" onClick={() => setIsSidebarOpen(true)}>
+        <span className="hamburger-line" />
+        <span className="hamburger-line" />
+        <span className="hamburger-line" />
+      </button>
+
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        onCustomFaces={() => setIsModalVisible(true)}
+        onManageConfigs={onNavigateToConfigs}
+      />
+
       <div className="header">
         <h1 className="title">The Dice</h1>
         <p className="subtitle">Drag to rotate • Tap button to roll</p>
-        
-        <button 
-          className="custom-button"
-          onClick={() => setIsModalVisible(true)}
-        >
-          ⚙️ Custom Faces
-        </button>
       </div>
 
       <div className="dice-container">
@@ -97,7 +125,6 @@ export default function DicePage() {
       </div>
 
       <div className="result-container">
-        {/* <p className="result-label">Result</p> */}
         <p className="result-number">
           {!isRolling ?  (hasCustomValues ? customFaceValues[currentNumber - 1] : currentNumber) : ('...')}
         </p>
@@ -154,4 +181,3 @@ export default function DicePage() {
     </div>
   );
 }
-
