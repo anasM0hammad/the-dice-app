@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   DiceConfig,
   getConfigs,
@@ -9,7 +9,9 @@ import {
   clearActiveConfig,
   generateId,
   canAddMore,
+  MAX_CONFIGS,
 } from '../../utils/configStorage';
+import { BackArrowIcon, EditIcon, TrashIcon, PlusIcon } from '../../components/icons';
 import './ConfigManagerPage.css';
 
 interface ConfigManagerPageProps {
@@ -23,16 +25,27 @@ export default function ConfigManagerPage({ onBack }: ConfigManagerPageProps) {
   const [faceInputs, setFaceInputs] = useState<string[]>(['', '', '', '', '', '']);
   const [configName, setConfigName] = useState('');
   const [error, setError] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     setConfigs(getConfigs());
     setActiveId(getActiveConfigId());
   }, []);
 
-  const refresh = () => {
-    setConfigs(getConfigs());
-    setActiveId(getActiveConfigId());
-  };
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  // Refresh when page becomes visible (both pages mounted)
+  useEffect(() => {
+    const onVisibility = () => { if (!document.hidden) refresh(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('focus', refresh);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [refresh]);
 
   const handleSelect = (id: string) => {
     if (activeId === id) {
@@ -45,12 +58,13 @@ export default function ConfigManagerPage({ onBack }: ConfigManagerPageProps) {
 
   const handleDelete = (id: string) => {
     deleteConfig(id);
+    setConfirmDeleteId(null);
     refresh();
   };
 
   const startCreate = () => {
     if (!canAddMore()) {
-      setError('Maximum 5 configurations reached. Delete one to add a new one.');
+      setError(`Maximum ${MAX_CONFIGS} dices reached. Delete one to add a new one.`);
       return;
     }
     setEditingConfig({ id: '', name: '', faceValues: ['', '', '', '', '', ''] });
@@ -74,7 +88,7 @@ export default function ConfigManagerPage({ onBack }: ConfigManagerPageProps) {
   const handleSave = () => {
     const trimmedName = configName.trim();
     if (!trimmedName) {
-      setError('Please enter a configuration name.');
+      setError('Please enter a name for this dice.');
       return;
     }
     const allFilled = faceInputs.every(v => v.trim() !== '');
@@ -91,7 +105,7 @@ export default function ConfigManagerPage({ onBack }: ConfigManagerPageProps) {
 
     const ok = saveConfig(config);
     if (!ok) {
-      setError('Maximum 5 configurations reached.');
+      setError(`Maximum ${MAX_CONFIGS} dices reached.`);
       return;
     }
 
@@ -107,13 +121,18 @@ export default function ConfigManagerPage({ onBack }: ConfigManagerPageProps) {
     if (error) setError('');
   };
 
+  const isAtLimit = configs.length >= MAX_CONFIGS;
+
+  // Edit view
   if (editingConfig) {
     return (
       <div className="config-page">
         <div className="config-page-header">
-          <button className="config-back-btn" onClick={cancelEdit}>&#8592;</button>
+          <button className="config-back-btn" onClick={cancelEdit} aria-label="Cancel">
+            <BackArrowIcon size={20} />
+          </button>
           <h1 className="config-page-title">
-            {editingConfig.id ? 'Edit Config' : 'New Config'}
+            {editingConfig.id ? 'Edit Dice' : 'New Dice'}
           </h1>
         </div>
 
@@ -121,13 +140,14 @@ export default function ConfigManagerPage({ onBack }: ConfigManagerPageProps) {
           {error && <div className="config-error">{error}</div>}
 
           <div className="config-input-group">
-            <label className="config-label">Config Name</label>
+            <label className="config-label">Dice Name</label>
             <input
               className="config-input"
               value={configName}
               onChange={e => setConfigName(e.target.value)}
               placeholder="e.g. Party Dice"
               maxLength={30}
+              autoFocus
             />
           </div>
 
@@ -145,25 +165,36 @@ export default function ConfigManagerPage({ onBack }: ConfigManagerPageProps) {
           ))}
 
           <button className="config-save-btn" onClick={handleSave}>
-            Save Configuration
+            Save Dice
           </button>
         </div>
       </div>
     );
   }
 
+  // List view
   return (
     <div className="config-page">
       <div className="config-page-header">
-        <button className="config-back-btn" onClick={onBack}>&#8592;</button>
-        <h1 className="config-page-title">Saved Configs</h1>
+        <button className="config-back-btn" onClick={onBack} aria-label="Back">
+          <BackArrowIcon size={20} />
+        </button>
+        <h1 className="config-page-title">Saved Dices</h1>
+        <span className={`config-header-count ${isAtLimit ? 'at-limit' : ''}`}>
+          {configs.length}/{MAX_CONFIGS}
+        </span>
       </div>
 
       {error && <div className="config-error" style={{ margin: '0 20px' }}>{error}</div>}
 
       <div className="config-list">
         {configs.length === 0 && (
-          <p className="config-empty">No saved configurations yet. Create one to get started.</p>
+          <div className="config-empty">
+            <div className="config-empty-icon">🎲</div>
+            <p className="config-empty-title">No saved dices yet</p>
+            <p className="config-empty-subtitle">Create your first custom dice to get started</p>
+            <button className="config-empty-cta" onClick={startCreate}>Create Dice</button>
+          </div>
         )}
 
         {configs.map(config => (
@@ -172,18 +203,35 @@ export default function ConfigManagerPage({ onBack }: ConfigManagerPageProps) {
             className={`config-card ${activeId === config.id ? 'config-card-active' : ''}`}
           >
             <div className="config-card-body" onClick={() => handleSelect(config.id)}>
-              <div className="config-card-name">{config.name}</div>
-              <div className="config-card-faces">
-                {config.faceValues.join(' / ')}
+              <div className="config-card-header">
+                <div className="config-card-name">{config.name}</div>
+                {activeId === config.id && (
+                  <span className="config-active-badge">Active</span>
+                )}
               </div>
-              {activeId === config.id && (
-                <span className="config-active-badge">Active</span>
-              )}
+              <div className="config-card-grid">
+                {config.faceValues.map((val, i) => (
+                  <div key={i} className="config-card-cell">{val}</div>
+                ))}
+              </div>
             </div>
-            <div className="config-card-actions">
-              <button className="config-action-btn" onClick={() => startEdit(config)}>Edit</button>
-              <button className="config-action-btn config-delete-btn" onClick={() => handleDelete(config.id)}>Delete</button>
-            </div>
+
+            {confirmDeleteId === config.id ? (
+              <div className="config-card-confirm">
+                <span className="config-confirm-text">Delete this dice?</span>
+                <button className="config-confirm-yes" onClick={() => handleDelete(config.id)}>Yes</button>
+                <button className="config-confirm-no" onClick={() => setConfirmDeleteId(null)}>No</button>
+              </div>
+            ) : (
+              <div className="config-card-actions">
+                <button className="config-action-btn" onClick={() => startEdit(config)} aria-label="Edit">
+                  <EditIcon size={15} /> Edit
+                </button>
+                <button className="config-action-btn config-delete-btn" onClick={() => setConfirmDeleteId(config.id)} aria-label="Delete">
+                  <TrashIcon size={15} /> Delete
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -192,11 +240,13 @@ export default function ConfigManagerPage({ onBack }: ConfigManagerPageProps) {
         <button
           className="config-add-btn"
           onClick={startCreate}
-          disabled={!canAddMore()}
+          disabled={isAtLimit}
         >
-          + New Configuration
+          <PlusIcon size={18} /> New Dice
         </button>
-        <p className="config-count">{configs.length} / 5 configurations</p>
+        {isAtLimit && (
+          <p className="config-limit-hint">Delete a dice to create a new one</p>
+        )}
       </div>
     </div>
   );

@@ -6,7 +6,7 @@ export interface DiceConfig {
 
 const CONFIGS_KEY = 'dice_configs';
 const ACTIVE_CONFIG_KEY = 'dice_active_config_id';
-const MAX_CONFIGS = 5;
+export const MAX_CONFIGS = 10;
 
 function loadConfigs(): DiceConfig[] {
   try {
@@ -54,7 +54,12 @@ export function deleteConfig(id: string) {
 }
 
 export function getActiveConfigId(): string | null {
-  return localStorage.getItem(ACTIVE_CONFIG_KEY);
+  const id = localStorage.getItem(ACTIVE_CONFIG_KEY);
+  if (id && !loadConfigs().find(c => c.id === id)) {
+    clearActiveConfig();
+    return null;
+  }
+  return id;
 }
 
 export function setActiveConfigId(id: string) {

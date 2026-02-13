@@ -1,0 +1,238 @@
+.onboarding-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #1a1a2e;
+  z-index: 5000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 60px 30px 40px;
+  padding-top: max(60px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(40px, env(safe-area-inset-bottom, 0px));
+  animation: onboardingFadeIn 0.4s ease-out;
+}
+
+@keyframes onboardingFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.onboarding-skip {
+  position: absolute;
+  top: max(20px, env(safe-area-inset-top, 0px));
+  right: 20px;
+  background: none;
+  border: none;
+  color: #606070;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 12px;
+  transition: color 0.2s;
+}
+
+.onboarding-skip:hover {
+  color: #a0a0b0;
+}
+
+.onboarding-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  justify-content: center;
+  max-width: 320px;
+  animation: onboardingSlide 0.35s ease-out;
+}
+
+@keyframes onboardingSlide {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.onboarding-visual {
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+}
+
+.onboarding-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Step 1: Tap to Roll */
+.onboarding-icon-roll {
+  position: relative;
+}
+
+.onboarding-tap-ring {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  border: 2px solid rgba(220, 38, 38, 0.3);
+  border-radius: 50%;
+  animation: tapRingPulse 1.5s ease-out infinite;
+}
+
+@keyframes tapRingPulse {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+/* Step 2: Drag hint */
+.onboarding-drag-hint {
+  position: absolute;
+  right: -30px;
+  bottom: -10px;
+  animation: dragHintMove 2s ease-in-out infinite;
+}
+
+@keyframes dragHintMove {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-20px, -15px); }
+}
+
+/* Step 3: Create grid */
+.onboarding-create-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.onboarding-create-cell {
+  width: 52px;
+  height: 52px;
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #DC2626;
+  animation: cellAppear 0.4s ease-out backwards;
+}
+
+@keyframes cellAppear {
+  from { opacity: 0; transform: scale(0.7); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Step 4: Save cards */
+.onboarding-save-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 200px;
+}
+
+.onboarding-save-card {
+  background: #2a2a3e;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #c0c0d0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: cardSlideIn 0.4s ease-out backwards;
+}
+
+@keyframes cardSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.onboarding-card-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #3a3a4e;
+  flex-shrink: 0;
+}
+
+.onboarding-card-dot.active {
+  background: #DC2626;
+}
+
+.onboarding-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 12px;
+  letter-spacing: -0.3px;
+}
+
+.onboarding-desc {
+  font-size: 15px;
+  color: #808090;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.onboarding-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.onboarding-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.onboarding-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3a3a4e;
+  transition: all 0.3s;
+}
+
+.onboarding-dot.active {
+  background: #DC2626;
+  width: 24px;
+  border-radius: 4px;
+}
+
+.onboarding-dot.done {
+  background: rgba(220, 38, 38, 0.4);
+}
+
+.onboarding-next-btn {
+  width: 100%;
+  background-color: #DC2626;
+  color: #ffffff;
+  border: none;
+  padding: 16px;
+  border-radius: 16px;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.3);
+}
+
+.onboarding-next-btn:hover {
+  background-color: #ef4444;
+  transform: translateY(-1px);
+}
+
+.onboarding-next-btn:active {
+  transform: scale(0.97);
+}
