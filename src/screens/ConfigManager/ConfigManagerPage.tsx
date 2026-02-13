@@ -9,6 +9,7 @@ import {
   clearActiveConfig,
   generateId,
   canAddMore,
+  MAX_CONFIGS,
 } from '../../utils/configStorage';
 import './ConfigManagerPage.css';
 
@@ -50,7 +51,7 @@ export default function ConfigManagerPage({ onBack }: ConfigManagerPageProps) {
 
   const startCreate = () => {
     if (!canAddMore()) {
-      setError('Maximum 5 configurations reached. Delete one to add a new one.');
+      setError(`Maximum ${MAX_CONFIGS} configurations reached. Delete one to add a new one.`);
       return;
     }
     setEditingConfig({ id: '', name: '', faceValues: ['', '', '', '', '', ''] });
@@ -91,7 +92,7 @@ export default function ConfigManagerPage({ onBack }: ConfigManagerPageProps) {
 
     const ok = saveConfig(config);
     if (!ok) {
-      setError('Maximum 5 configurations reached.');
+      setError(`Maximum ${MAX_CONFIGS} configurations reached.`);
       return;
     }
 
@@ -196,7 +197,7 @@ export default function ConfigManagerPage({ onBack }: ConfigManagerPageProps) {
         >
           + New Configuration
         </button>
-        <p className="config-count">{configs.length} / 5 configurations</p>
+        <p className="config-count">{configs.length} / {MAX_CONFIGS} configurations</p>
       </div>
     </div>
   );

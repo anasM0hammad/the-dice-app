@@ -3,6 +3,7 @@ import CustomFacesModal from './CustomFacesModal';
 import Sidebar from '../../components/Sidebar';
 import { useShakeDetection } from '../../hooks/useShakeDetection';
 import { getActiveConfigId, getConfigById } from '../../utils/configStorage';
+import { MenuIcon } from '../../components/icons';
 import './DicePage.css';
 
 const Dice3D = lazy(() => import('../../components/Dice3D'));
@@ -92,10 +93,8 @@ export default function DicePage({ onNavigateToConfigs }: DicePageProps) {
 
   return (
     <div className="dice-page">
-      <button className="hamburger-btn" onClick={() => setIsSidebarOpen(true)}>
-        <span className="hamburger-line" />
-        <span className="hamburger-line" />
-        <span className="hamburger-line" />
+      <button className="hamburger-btn" onClick={() => setIsSidebarOpen(true)} aria-label="Open menu">
+        <MenuIcon size={22} />
       </button>
 
       <Sidebar

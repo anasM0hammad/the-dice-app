@@ -58,7 +58,6 @@ export default function CustomFacesModal({ visible, onClose, onSave, initialValu
 
     if (!isFilled) {
       setErrorMessage('⚠️ Please fill in all face values');
-      alert('Please fill in all 6 face values before saving.');
       return;
     }
     
