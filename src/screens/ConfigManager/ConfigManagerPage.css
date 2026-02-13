@@ -28,7 +28,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.15s;
   flex-shrink: 0;
 }
 
@@ -36,11 +36,28 @@
   background-color: #4a4a5e;
 }
 
+.config-back-btn:active {
+  transform: scale(0.92);
+}
+
 .config-page-title {
   font-size: 22px;
   font-weight: bold;
   color: #ffffff;
   margin: 0;
+  flex: 1;
+}
+
+.config-header-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: #707080;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.config-header-count.at-limit {
+  color: #f59e0b;
 }
 
 .config-list {
@@ -50,14 +67,56 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* Empty state */
 .config-empty {
-  color: #606070;
-  font-size: 15px;
   text-align: center;
-  margin-top: 40px;
-  line-height: 1.5;
+  margin-top: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
+.config-empty-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+
+.config-empty-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #a0a0b0;
+  margin: 0;
+}
+
+.config-empty-subtitle {
+  font-size: 14px;
+  color: #606070;
+  margin: 0;
+}
+
+.config-empty-cta {
+  margin-top: 16px;
+  background: rgba(220, 38, 38, 0.12);
+  color: #DC2626;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.config-empty-cta:hover {
+  background: rgba(220, 38, 38, 0.2);
+}
+
+.config-empty-cta:active {
+  transform: scale(0.96);
+}
+
+/* Card styles */
 .config-card {
   background-color: #2a2a3e;
   border-radius: 12px;
@@ -74,29 +133,27 @@
 .config-card-body {
   padding: 16px;
   cursor: pointer;
-  position: relative;
+  transition: background-color 0.15s;
+}
+
+.config-card-body:active {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.config-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
 }
 
 .config-card-name {
   font-size: 17px;
   font-weight: 600;
   color: #ffffff;
-  margin-bottom: 6px;
-}
-
-.config-card-faces {
-  font-size: 13px;
-  color: #a0a0b0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding-right: 60px;
 }
 
 .config-active-badge {
-  position: absolute;
-  top: 14px;
-  right: 16px;
   background-color: #DC2626;
   color: #ffffff;
   font-size: 11px;
@@ -104,8 +161,31 @@
   padding: 3px 10px;
   border-radius: 10px;
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 
+/* 2x3 visual grid for face values */
+.config-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.config-card-cell {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c0c0d0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Card actions */
 .config-card-actions {
   display: flex;
   border-top: 1px solid #3a3a4e;
@@ -121,11 +201,19 @@
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .config-action-btn:hover {
   background-color: #3a3a4e;
   color: #ffffff;
+}
+
+.config-action-btn:active {
+  background-color: rgba(255, 255, 255, 0.08);
 }
 
 .config-delete-btn {
@@ -138,6 +226,61 @@
   color: #ef4444;
 }
 
+/* Delete confirmation inline */
+.config-card-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(220, 38, 38, 0.2);
+  background: rgba(220, 38, 38, 0.06);
+}
+
+.config-confirm-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ef4444;
+}
+
+.config-confirm-yes {
+  background-color: #DC2626;
+  color: #ffffff;
+  border: none;
+  padding: 6px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.config-confirm-yes:hover {
+  background-color: #ef4444;
+}
+
+.config-confirm-yes:active {
+  transform: scale(0.95);
+}
+
+.config-confirm-no {
+  background: none;
+  color: #a0a0b0;
+  border: 1px solid #3a3a4e;
+  padding: 6px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.config-confirm-no:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+/* Footer */
 .config-footer {
   padding: 16px 20px;
   padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
@@ -155,11 +298,19 @@
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .config-add-btn:hover:not(:disabled) {
   background-color: #ef4444;
+}
+
+.config-add-btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .config-add-btn:disabled {
@@ -168,10 +319,10 @@
   cursor: not-allowed;
 }
 
-.config-count {
-  color: #606070;
-  font-size: 13px;
-  margin-top: 8px;
+.config-limit-hint {
+  color: #f59e0b;
+  font-size: 12px;
+  margin: 8px 0 0;
 }
 
 /* Form styles */
@@ -238,9 +389,13 @@
   font-weight: bold;
   cursor: pointer;
   margin-top: 8px;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.15s;
 }
 
 .config-save-btn:hover {
   background-color: #ef4444;
+}
+
+.config-save-btn:active {
+  transform: scale(0.97);
 }

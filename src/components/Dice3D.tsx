@@ -2,11 +2,14 @@ import { useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import ErrorBoundary from './ErrorBoundary';
+import type { DiceSkin } from '../utils/diceSkins';
 
 interface Dice3DProps {
   isRolling: boolean;
   onRollComplete: (result: number) => void;
   customFaceValues?: string[];
+  customFaceImages?: string[];
+  activeSkin?: DiceSkin;
 }
 
 const diceFaces = {
@@ -27,7 +30,7 @@ const faceRotations: { [key: number]: [number, number, number] } = {
   6: [-Math.PI / 2, 0, 0],
 };
 
-function DiceMesh({ isRolling, onRollComplete, customFaceValues }: Dice3DProps) {
+function DiceMesh({ isRolling, onRollComplete, customFaceValues, customFaceImages, activeSkin }: Dice3DProps) {
   const diceGroupRef = useRef<THREE.Group>(null);
   const rollTimeRef = useRef(0);
   const targetResultRef = useRef(1);
@@ -38,6 +41,7 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues }: Dice3DProps) 
   const tumbleSpeedRef = useRef(18);
   const isRollingRef = useRef(isRolling);
   const texturesCacheRef = useRef<Map<string, THREE.DataTexture>>(new Map());
+  const imageTexturesRef = useRef<Map<string, THREE.Texture>>(new Map());
   const [, forceUpdate] = useState({});
   
   const { gl } = useThree();
@@ -121,12 +125,53 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues }: Dice3DProps) 
     }
   }, [customFaceValues]);
 
+  // Load image textures when customFaceImages changes
+  useEffect(() => {
+    if (!customFaceImages || customFaceImages.length !== 6 || customFaceImages.some(img => !img)) {
+      imageTexturesRef.current.forEach(t => t.dispose());
+      imageTexturesRef.current.clear();
+      forceUpdate({});
+      return;
+    }
+
+    const loader = new THREE.TextureLoader();
+    const newMap = new Map<string, THREE.Texture>();
+
+    customFaceImages.forEach((dataUrl, i) => {
+      const key = `img-${i}`;
+      const existing = imageTexturesRef.current.get(key);
+      // Reuse if same source
+      if (existing && (existing as unknown as { _src?: string })._src === dataUrl) {
+        newMap.set(key, existing);
+        return;
+      }
+      const tex = loader.load(dataUrl, () => forceUpdate({}));
+      tex.colorSpace = THREE.SRGBColorSpace;
+      (tex as unknown as { _src?: string })._src = dataUrl;
+      newMap.set(key, tex);
+    });
+
+    // Dispose old textures that are not reused
+    imageTexturesRef.current.forEach((tex, key) => {
+      if (!newMap.has(key)) tex.dispose();
+    });
+    imageTexturesRef.current = newMap;
+    forceUpdate({});
+  }, [customFaceImages]);
+
   useEffect(() => {
     return () => {
       texturesCacheRef.current.forEach(t => t.dispose());
       texturesCacheRef.current.clear();
+      imageTexturesRef.current.forEach(t => t.dispose());
+      imageTexturesRef.current.clear();
     };
   }, []);
+
+  const parseHexColor = (hex: string): [number, number, number] => {
+    const h = hex.replace('#', '');
+    return [parseInt(h.substring(0, 2), 16), parseInt(h.substring(2, 4), 16), parseInt(h.substring(4, 6), 16)];
+  };
 
   const createTextTexture = (text: string): THREE.DataTexture => {
     const size = 128;
@@ -149,10 +194,12 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues }: Dice3DProps) 
       data[index + 3] = a;
     };
     
+    const [textR, textG, textB] = activeSkin ? parseHexColor(activeSkin.dotColor) : [220, 38, 38];
+
     const drawRect = (x: number, y: number, w: number, h: number) => {
       for (let i = 0; i < w; i++) {
         for (let j = 0; j < h; j++) {
-          drawPixel(x + i, y + j, 220, 38, 38); // Red color #DC2626
+          drawPixel(x + i, y + j, textR, textG, textB);
         }
       }
     };
@@ -290,7 +337,7 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues }: Dice3DProps) 
     return (
       <mesh key={`${faceIndex}-${x}-${y}`} position={dotPosition} rotation={rotation}>
         <circleGeometry args={[0.12, 32]} />
-        <meshBasicMaterial color="#DC2626" side={THREE.DoubleSide} />
+        <meshBasicMaterial color={activeSkin ? activeSkin.dotColor : '#DC2626'} side={THREE.DoubleSide} />
       </mesh>
     );
   };
@@ -469,23 +516,55 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues }: Dice3DProps) 
     }
   });
 
-  const hasCustomValues = customFaceValues && 
-                         customFaceValues.length === 6 && 
+  const createImagePlane = (faceIndex: number) => {
+    let position: [number, number, number];
+    let rotation: [number, number, number] = [0, 0, 0];
+
+    switch (faceIndex) {
+      case 0: position = [0, 0, 1.01]; break;
+      case 1: position = [0, 0, -1.01]; rotation = [0, Math.PI, 0]; break;
+      case 2: position = [1.01, 0, 0]; rotation = [0, Math.PI / 2, 0]; break;
+      case 3: position = [-1.01, 0, 0]; rotation = [0, -Math.PI / 2, 0]; break;
+      case 4: position = [0, 1.01, 0]; rotation = [-Math.PI / 2, 0, 0]; break;
+      case 5: position = [0, -1.01, 0]; rotation = [Math.PI / 2, 0, 0]; break;
+      default: position = [0, 0, 0];
+    }
+
+    const tex = imageTexturesRef.current.get(`img-${faceIndex}`);
+    if (!tex) return null;
+
+    return (
+      <mesh key={`img-${faceIndex}`} position={position} rotation={rotation}>
+        <planeGeometry args={[1.9, 1.9]} />
+        <meshBasicMaterial map={tex} side={THREE.DoubleSide} />
+      </mesh>
+    );
+  };
+
+  const hasCustomValues = customFaceValues &&
+                         customFaceValues.length === 6 &&
                          customFaceValues.every(val => val.trim() !== '');
+
+  const hasCustomImages = customFaceImages &&
+                          customFaceImages.length === 6 &&
+                          customFaceImages.every(img => img !== '') &&
+                          imageTexturesRef.current.size === 6;
 
   return (
     <group ref={diceGroupRef} rotation={currentRotationRef.current}>
       <mesh castShadow receiveShadow>
         <boxGeometry args={[2, 2, 2]} />
-        <meshStandardMaterial 
-          color={0xFFFFFF}
-          roughness={0.3}
-          metalness={0.3}
+        <meshStandardMaterial
+          color={activeSkin ? activeSkin.material.color : '#FFFFFF'}
+          roughness={activeSkin ? activeSkin.material.roughness : 0.3}
+          metalness={activeSkin ? activeSkin.material.metalness : 0.3}
           envMapIntensity={0.5}
         />
       </mesh>
-      
-      {hasCustomValues ? (
+
+      {hasCustomImages ? (
+        [0, 1, 2, 3, 4, 5].map(i => createImagePlane(i))
+      ) : hasCustomValues ? (
         customFaceValues!.map((text, index) => createTextPlane(text, index))
       ) : (
         Object.entries(diceFaces).map(([, dots], faceIndex) =>

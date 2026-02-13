@@ -83,7 +83,7 @@ export default function CustomFacesModal({ visible, onClose, onSave, initialValu
     <div className="modal-overlay" ref={overlayRef} onClick={handleClose}>
       <div className="modal-container" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2 className="modal-title">Custom Faces</h2>
+          <h2 className="modal-title">Create Dice</h2>
           <button onClick={handleClose} className="close-button">✕</button>
         </div>
 
@@ -110,7 +110,7 @@ export default function CustomFacesModal({ visible, onClose, onSave, initialValu
 
         <div className="button-container">
           <button className="save-button" onClick={handleSave}>
-            Save
+            Apply
           </button>
           
           <button className="reset-button" onClick={handleReset}>
