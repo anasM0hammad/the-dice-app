@@ -71,15 +71,22 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues }: Dice3DProps) 
 
     const handlePointerMove = (e: PointerEvent) => {
       if (isDraggingRef.current && !isRollingRef.current && diceGroupRef.current) {
-        const rotationSpeed = 0.005;
-        diceGroupRef.current.rotation.x += e.movementY * rotationSpeed;
-        diceGroupRef.current.rotation.y += e.movementX * rotationSpeed;
-        
+        const rotationSpeed = 0.015;
+        const deltaX = e.movementX * rotationSpeed;
+        const deltaY = e.movementY * rotationSpeed;
+
+        // Apply rotations in world space so swipe direction is always consistent
+        const quaternion = diceGroupRef.current.quaternion.clone();
+        const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), deltaY);
+        const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaX);
+        quaternion.premultiply(qX).premultiply(qY);
+        diceGroupRef.current.quaternion.copy(quaternion);
+
         velocityRef.current = {
-          x: e.movementY * 0.1,
-          y: e.movementX * 0.1,
+          x: e.movementY * 0.3,
+          y: e.movementX * 0.3,
         };
-        
+
         currentRotationRef.current = [
           diceGroupRef.current.rotation.x,
           diceGroupRef.current.rotation.y,
@@ -437,13 +444,20 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues }: Dice3DProps) 
       const velocityThreshold = 0.001;
       
       if (Math.abs(velocityRef.current.x) > velocityThreshold || Math.abs(velocityRef.current.y) > velocityThreshold) {
-        const rotationSpeed = 0.01;
-        diceGroupRef.current.rotation.x += velocityRef.current.x * rotationSpeed;
-        diceGroupRef.current.rotation.y += velocityRef.current.y * rotationSpeed;
-        
-        velocityRef.current.x *= 0.95;
-        velocityRef.current.y *= 0.95;
-        
+        const rotationSpeed = 0.04;
+        const dX = velocityRef.current.x * rotationSpeed;
+        const dY = velocityRef.current.y * rotationSpeed;
+
+        // Apply inertia rotations in world space for consistent direction
+        const quaternion = diceGroupRef.current.quaternion.clone();
+        const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), dX);
+        const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), dY);
+        quaternion.premultiply(qX).premultiply(qY);
+        diceGroupRef.current.quaternion.copy(quaternion);
+
+        velocityRef.current.x *= 0.97;
+        velocityRef.current.y *= 0.97;
+
         currentRotationRef.current = [
           diceGroupRef.current.rotation.x,
           diceGroupRef.current.rotation.y,

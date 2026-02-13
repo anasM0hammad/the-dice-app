@@ -1,0 +1,131 @@
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 900;
+  animation: sidebarFadeIn 0.2s ease-out forwards;
+}
+
+@keyframes sidebarFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: -280px;
+  width: 280px;
+  height: 100vh;
+  background-color: #2a2a3e;
+  z-index: 1000;
+  transition: left 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.4);
+}
+
+.sidebar-open {
+  left: 0;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  padding-top: max(20px, env(safe-area-inset-top, 0px));
+  border-bottom: 1px solid #3a3a4e;
+}
+
+.sidebar-title {
+  font-size: 22px;
+  font-weight: bold;
+  color: #ffffff;
+  margin: 0;
+}
+
+.sidebar-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  background-color: #3a3a4e;
+  border: none;
+  color: #a0a0b0;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+.sidebar-close:hover {
+  background-color: #4a4a5e;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 12px 0;
+}
+
+.sidebar-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background: none;
+  border: none;
+  color: #d0d0dd;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s;
+}
+
+.sidebar-item:hover {
+  background-color: #3a3a4e;
+}
+
+.sidebar-icon {
+  font-size: 20px;
+  width: 28px;
+  text-align: center;
+}
+
+.hamburger-btn {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top, 0px));
+  left: max(16px, env(safe-area-inset-left, 0px));
+  width: 40px;
+  height: 40px;
+  background: rgba(58, 58, 78, 0.8);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  z-index: 100;
+  padding: 0;
+  transition: background-color 0.2s;
+}
+
+.hamburger-btn:hover {
+  background-color: rgba(74, 74, 94, 0.9);
+}
+
+.hamburger-line {
+  width: 20px;
+  height: 2px;
+  background-color: #d0d0dd;
+  border-radius: 1px;
+}

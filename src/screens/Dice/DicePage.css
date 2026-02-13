@@ -34,22 +34,6 @@
   margin-bottom: 12px;
 }
 
-.custom-button {
-  background-color: #3a3a4e;
-  color: #ffffff;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 8px;
-  transition: background-color 0.2s;
-}
-
-.custom-button:hover {
-  background-color: #4a4a5e;
-}
 
 .dice-container {
   width: 100%;
