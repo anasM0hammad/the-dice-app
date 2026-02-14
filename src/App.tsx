@@ -29,7 +29,7 @@ function App() {
         <OnboardingScreen onComplete={() => setShowOnboarding(false)} />
       )}
       <div style={{ display: page === 'dice' ? 'block' : 'none' }}>
-        <DicePage onNavigateToConfigs={goToConfigs} onNavigateToSkins={goToSkins} />
+        <DicePage onNavigateToConfigs={goToConfigs} onNavigateToSkins={goToSkins} isActive={page === 'dice'} />
       </div>
       <div style={{ display: page === 'configs' ? 'block' : 'none' }}>
         <ConfigManagerPage onBack={goToDice} />

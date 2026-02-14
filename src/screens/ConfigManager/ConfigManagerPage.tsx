@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   DiceConfig,
   getConfigs,
@@ -11,6 +11,8 @@ import {
   canAddMore,
   MAX_CONFIGS,
 } from '../../utils/configStorage';
+import { SKINS } from '../../utils/diceSkins';
+import DicePreviewModal from '../../components/DicePreviewModal';
 import { BackArrowIcon, EditIcon, TrashIcon, PlusIcon } from '../../components/icons';
 import './ConfigManagerPage.css';
 
@@ -26,6 +28,24 @@ export default function ConfigManagerPage({ onBack }: ConfigManagerPageProps) {
   const [configName, setConfigName] = useState('');
   const [error, setError] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [previewConfig, setPreviewConfig] = useState<DiceConfig | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggeredRef = useRef(false);
+
+  const handleLongPressStart = useCallback((config: DiceConfig) => {
+    longPressTriggeredRef.current = false;
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      setPreviewConfig(config);
+    }, 500);
+  }, []);
+
+  const handleLongPressEnd = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
 
   const refresh = useCallback(() => {
     setConfigs(getConfigs());
@@ -202,7 +222,14 @@ export default function ConfigManagerPage({ onBack }: ConfigManagerPageProps) {
             key={config.id}
             className={`config-card ${activeId === config.id ? 'config-card-active' : ''}`}
           >
-            <div className="config-card-body" onClick={() => handleSelect(config.id)}>
+            <div
+              className="config-card-body"
+              onClick={() => { if (!longPressTriggeredRef.current) handleSelect(config.id); }}
+              onPointerDown={() => handleLongPressStart(config)}
+              onPointerUp={handleLongPressEnd}
+              onPointerLeave={handleLongPressEnd}
+              onContextMenu={e => e.preventDefault()}
+            >
               <div className="config-card-header">
                 <div className="config-card-name">{config.name}</div>
                 {activeId === config.id && (
@@ -248,6 +275,14 @@ export default function ConfigManagerPage({ onBack }: ConfigManagerPageProps) {
           <p className="config-limit-hint">Delete a dice to create a new one</p>
         )}
       </div>
+
+      <DicePreviewModal
+        visible={!!previewConfig}
+        onClose={() => setPreviewConfig(null)}
+        title={previewConfig?.name || ''}
+        skin={SKINS[0]}
+        customFaceValues={previewConfig?.faceValues}
+      />
     </div>
   );
 }

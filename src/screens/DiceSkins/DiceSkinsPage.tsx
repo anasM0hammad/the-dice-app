@@ -1,8 +1,9 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   SKINS, DiceSkin, getActiveSkinId, setActiveSkinId,
   isSkinUnlocked, unlockSkin, getUnlockTimeRemaining,
 } from '../../utils/diceSkins';
+import DicePreviewModal from '../../components/DicePreviewModal';
 import { BackArrowIcon } from '../../components/icons';
 import { showRewardedAd } from '../../utils/admob';
 import './DiceSkinsPage.css';
@@ -20,6 +21,24 @@ function formatTimeRemaining(ms: number): string {
 export default function DiceSkinsPage({ onBack }: DiceSkinsPageProps) {
   const [activeSkinId, setActiveSkinIdState] = useState(getActiveSkinId);
   const [, setTick] = useState(0);
+  const [previewSkin, setPreviewSkin] = useState<DiceSkin | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggeredRef = useRef(false);
+
+  const handleLongPressStart = useCallback((skin: DiceSkin) => {
+    longPressTriggeredRef.current = false;
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      setPreviewSkin(skin);
+    }, 500);
+  }, []);
+
+  const handleLongPressEnd = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
 
   // Refresh unlock timers periodically
   useEffect(() => {
@@ -75,7 +94,11 @@ export default function DiceSkinsPage({ onBack }: DiceSkinsPageProps) {
             <button
               key={skin.id}
               className={`skin-card ${isActive ? 'skin-card-active' : ''}`}
-              onClick={() => handleSelect(skin)}
+              onClick={() => { if (!longPressTriggeredRef.current) handleSelect(skin); }}
+              onPointerDown={() => handleLongPressStart(skin)}
+              onPointerUp={handleLongPressEnd}
+              onPointerLeave={handleLongPressEnd}
+              onContextMenu={e => e.preventDefault()}
             >
               <div
                 className="skin-preview"
@@ -115,6 +138,13 @@ export default function DiceSkinsPage({ onBack }: DiceSkinsPageProps) {
           );
         })}
       </div>
+
+      <DicePreviewModal
+        visible={!!previewSkin}
+        onClose={() => setPreviewSkin(null)}
+        title={previewSkin?.name || ''}
+        skin={previewSkin || SKINS[0]}
+      />
     </div>
   );
 }
