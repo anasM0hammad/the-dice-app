@@ -1,9 +1,18 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
+import { Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import ErrorBoundary from './ErrorBoundary';
 import type { DiceSkin } from '../utils/diceSkins';
 import { CloseIcon } from './icons';
+import { getProceduralTexture } from '../utils/proceduralTextures';
+
+// Match Dice3D sizing (15% increase)
+const DICE_SIZE = 2.3;
+const FACE_OFFSET = DICE_SIZE / 2 + 0.01;
+const DOT_SPREAD = 0.345;
+const DOT_RADIUS = 0.138;
+const PLANE_SIZE = 2.07;
 
 interface DicePreviewModalProps {
   visible: boolean;
@@ -15,16 +24,21 @@ interface DicePreviewModalProps {
 
 const diceFaces: { [key: number]: number[][] } = {
   1: [[0, 0, 0]],
-  2: [[-0.3, 0.3, 0], [0.3, -0.3, 0]],
-  3: [[-0.3, 0.3, 0], [0, 0, 0], [0.3, -0.3, 0]],
-  4: [[-0.3, 0.3, 0], [0.3, 0.3, 0], [-0.3, -0.3, 0], [0.3, -0.3, 0]],
-  5: [[-0.3, 0.3, 0], [0.3, 0.3, 0], [0, 0, 0], [-0.3, -0.3, 0], [0.3, -0.3, 0]],
-  6: [[-0.3, 0.3, 0], [0.3, 0.3, 0], [-0.3, 0, 0], [0.3, 0, 0], [-0.3, -0.3, 0], [0.3, -0.3, 0]],
+  2: [[-DOT_SPREAD, DOT_SPREAD, 0], [DOT_SPREAD, -DOT_SPREAD, 0]],
+  3: [[-DOT_SPREAD, DOT_SPREAD, 0], [0, 0, 0], [DOT_SPREAD, -DOT_SPREAD, 0]],
+  4: [[-DOT_SPREAD, DOT_SPREAD, 0], [DOT_SPREAD, DOT_SPREAD, 0], [-DOT_SPREAD, -DOT_SPREAD, 0], [DOT_SPREAD, -DOT_SPREAD, 0]],
+  5: [[-DOT_SPREAD, DOT_SPREAD, 0], [DOT_SPREAD, DOT_SPREAD, 0], [0, 0, 0], [-DOT_SPREAD, -DOT_SPREAD, 0], [DOT_SPREAD, -DOT_SPREAD, 0]],
+  6: [[-DOT_SPREAD, DOT_SPREAD, 0], [DOT_SPREAD, DOT_SPREAD, 0], [-DOT_SPREAD, 0, 0], [DOT_SPREAD, 0, 0], [-DOT_SPREAD, -DOT_SPREAD, 0], [DOT_SPREAD, -DOT_SPREAD, 0]],
 };
 
 function AutoRotatingDice({ skin, customFaceValues }: { skin: DiceSkin; customFaceValues?: string[] }) {
   const groupRef = useRef<THREE.Group>(null);
   const texturesCacheRef = useRef<Map<string, THREE.DataTexture>>(new Map());
+
+  const proceduralMap = useMemo(() => {
+    if (!skin.material.textureType || skin.material.textureType === 'none') return null;
+    return getProceduralTexture(skin.material.textureType, skin.material.color);
+  }, [skin.material.textureType, skin.material.color]);
 
   useEffect(() => {
     return () => {
@@ -126,17 +140,17 @@ function AutoRotatingDice({ skin, customFaceValues }: { skin: DiceSkin; customFa
     let dotPosition: [number, number, number];
     let rotation: [number, number, number] = [0, 0, 0];
     switch (faceIndex) {
-      case 0: dotPosition = [x, y, 1.01]; break;
-      case 1: dotPosition = [-x, y, -1.01]; rotation = [0, Math.PI, 0]; break;
-      case 2: dotPosition = [1.01, y, -x]; rotation = [0, Math.PI / 2, 0]; break;
-      case 3: dotPosition = [-1.01, y, x]; rotation = [0, -Math.PI / 2, 0]; break;
-      case 4: dotPosition = [x, 1.01, -y]; rotation = [-Math.PI / 2, 0, 0]; break;
-      case 5: dotPosition = [x, -1.01, y]; rotation = [Math.PI / 2, 0, 0]; break;
+      case 0: dotPosition = [x, y, FACE_OFFSET]; break;
+      case 1: dotPosition = [-x, y, -FACE_OFFSET]; rotation = [0, Math.PI, 0]; break;
+      case 2: dotPosition = [FACE_OFFSET, y, -x]; rotation = [0, Math.PI / 2, 0]; break;
+      case 3: dotPosition = [-FACE_OFFSET, y, x]; rotation = [0, -Math.PI / 2, 0]; break;
+      case 4: dotPosition = [x, FACE_OFFSET, -y]; rotation = [-Math.PI / 2, 0, 0]; break;
+      case 5: dotPosition = [x, -FACE_OFFSET, y]; rotation = [Math.PI / 2, 0, 0]; break;
       default: dotPosition = [0, 0, 0];
     }
     return (
       <mesh key={`${faceIndex}-${x}-${y}`} position={dotPosition} rotation={rotation}>
-        <circleGeometry args={[0.12, 32]} />
+        <circleGeometry args={[DOT_RADIUS, 32]} />
         <meshBasicMaterial color={skin.dotColor} side={THREE.DoubleSide} />
       </mesh>
     );
@@ -146,12 +160,12 @@ function AutoRotatingDice({ skin, customFaceValues }: { skin: DiceSkin; customFa
     let position: [number, number, number];
     let rotation: [number, number, number] = [0, 0, 0];
     switch (faceIndex) {
-      case 0: position = [0, 0, 1.01]; break;
-      case 1: position = [0, 0, -1.01]; rotation = [0, Math.PI, 0]; break;
-      case 2: position = [1.01, 0, 0]; rotation = [0, Math.PI / 2, 0]; break;
-      case 3: position = [-1.01, 0, 0]; rotation = [0, -Math.PI / 2, 0]; break;
-      case 4: position = [0, 1.01, 0]; rotation = [-Math.PI / 2, 0, 0]; break;
-      case 5: position = [0, -1.01, 0]; rotation = [Math.PI / 2, 0, 0]; break;
+      case 0: position = [0, 0, FACE_OFFSET]; break;
+      case 1: position = [0, 0, -FACE_OFFSET]; rotation = [0, Math.PI, 0]; break;
+      case 2: position = [FACE_OFFSET, 0, 0]; rotation = [0, Math.PI / 2, 0]; break;
+      case 3: position = [-FACE_OFFSET, 0, 0]; rotation = [0, -Math.PI / 2, 0]; break;
+      case 4: position = [0, FACE_OFFSET, 0]; rotation = [-Math.PI / 2, 0, 0]; break;
+      case 5: position = [0, -FACE_OFFSET, 0]; rotation = [Math.PI / 2, 0, 0]; break;
       default: position = [0, 0, 0];
     }
     const cacheKey = `${faceIndex}-${text}`;
@@ -162,7 +176,7 @@ function AutoRotatingDice({ skin, customFaceValues }: { skin: DiceSkin; customFa
     }
     return (
       <mesh key={`text-${faceIndex}`} position={position} rotation={rotation}>
-        <planeGeometry args={[1.8, 1.8]} />
+        <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
         <meshBasicMaterial map={texture} transparent side={THREE.DoubleSide} />
       </mesh>
     );
@@ -172,15 +186,27 @@ function AutoRotatingDice({ skin, customFaceValues }: { skin: DiceSkin; customFa
     customFaceValues.length === 6 &&
     customFaceValues.every(val => val.trim() !== '');
 
+  const mat = skin.material;
+
   return (
     <group ref={groupRef} rotation={[0.4, 0.4, 0]}>
       <mesh castShadow receiveShadow>
-        <boxGeometry args={[2, 2, 2]} />
-        <meshStandardMaterial
-          color={skin.material.color}
-          roughness={skin.material.roughness}
-          metalness={skin.material.metalness}
-          envMapIntensity={0.5}
+        <boxGeometry args={[DICE_SIZE, DICE_SIZE, DICE_SIZE]} />
+        <meshPhysicalMaterial
+          color={mat.color}
+          roughness={mat.roughness}
+          metalness={mat.metalness}
+          envMapIntensity={1.0}
+          clearcoat={mat.clearcoat ?? 0}
+          clearcoatRoughness={mat.clearcoatRoughness ?? 0}
+          transmission={mat.transmission ?? 0}
+          thickness={mat.thickness ?? 0}
+          ior={mat.ior ?? 1.5}
+          opacity={mat.opacity ?? 1}
+          transparent={mat.transparent ?? false}
+          emissive={mat.emissive ?? '#000000'}
+          emissiveIntensity={mat.emissiveIntensity ?? 0}
+          map={proceduralMap}
         />
       </mesh>
       {hasCustomValues
@@ -212,10 +238,12 @@ export default function DicePreviewModal({ visible, onClose, title, skin, custom
               style={{ width: '100%', height: '100%', touchAction: 'none' }}
             >
               <color attach="background" args={['#1a1a2e']} />
-              <ambientLight intensity={1.5} />
-              <directionalLight position={[5, 5, 5]} intensity={2.5} />
-              <directionalLight position={[-3, -3, -3]} intensity={0.7} />
-              <directionalLight position={[0, -3, 3]} intensity={1} />
+              <Environment preset="studio" />
+              <ambientLight intensity={1.2} />
+              <directionalLight position={[5, 5, 5]} intensity={2.0} />
+              <directionalLight position={[-3, -3, -3]} intensity={0.8} />
+              <directionalLight position={[0, -3, 3]} intensity={1.0} />
+              <directionalLight position={[-2, 4, -1]} intensity={0.6} />
               <AutoRotatingDice skin={skin} customFaceValues={customFaceValues} />
             </Canvas>
           </ErrorBoundary>
