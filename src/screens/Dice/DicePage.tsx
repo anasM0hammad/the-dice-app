@@ -9,7 +9,7 @@ import {
 } from '../../utils/configStorage';
 import { MenuIcon, SoundOnIcon, SoundOffIcon, ShareIcon, ChevronRightIcon } from '../../components/icons';
 import { getActiveSkin } from '../../utils/diceSkins';
-import { incrementRollCountForAd, showInterstitialAd, showInterstitialOnNavigation } from '../../utils/admob';
+import { incrementRollCountForAd, showInterstitialAd } from '../../utils/admob';
 import './DicePage.css';
 
 const Dice3D = lazy(() => import('../../components/Dice3D'));
@@ -28,9 +28,10 @@ interface RollHistoryEntry {
 interface DicePageProps {
   onNavigateToConfigs: () => void;
   onNavigateToSkins: () => void;
+  isActive: boolean;
 }
 
-export default function DicePage({ onNavigateToConfigs, onNavigateToSkins }: DicePageProps) {
+export default function DicePage({ onNavigateToConfigs, onNavigateToSkins, isActive }: DicePageProps) {
   const [isRolling, setIsRolling] = useState(false);
   const [currentNumber, setCurrentNumber] = useState(1);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -86,6 +87,26 @@ export default function DicePage({ onNavigateToConfigs, onNavigateToSkins }: Dic
     }
   }, [refreshConfigs]);
 
+  // Refresh configs and skin when page becomes active (returning from other pages)
+  useEffect(() => {
+    if (isActive) {
+      refreshConfigs();
+      // Re-apply active config in case it was deleted or changed
+      const activeId = getActiveConfigId();
+      if (activeId) {
+        const config = getConfigById(activeId);
+        if (config) {
+          setCustomFaceValues(config.faceValues);
+        } else {
+          // Active config was deleted
+          clearActiveConfig();
+          setCustomFaceValues([]);
+          setActiveConfigIdState(null);
+        }
+      }
+    }
+  }, [isActive, refreshConfigs]);
+
   useEffect(() => {
     const audio = new Audio('/dice-roll.mp3');
     audio.volume = 0.5;
@@ -125,7 +146,7 @@ export default function DicePage({ onNavigateToConfigs, onNavigateToSkins }: Dic
     setResultKey(k => k + 1);
 
     // Roll history
-    const label = hasCustomImages ? `img ${result}` : hasCustomValues ? customFaceValues[result - 1] : String(result);
+    const label = hasCustomImages ? `Face ${result}` : hasCustomValues ? customFaceValues[result - 1] : String(result);
     setRollHistory(prev => [{ label, timestamp: Date.now() }, ...prev].slice(0, 10));
 
     // Roll count + review prompt
@@ -200,18 +221,43 @@ export default function DicePage({ onNavigateToConfigs, onNavigateToSkins }: Dic
   };
 
   // Share roll
+  const [shareToast, setShareToast] = useState('');
   const handleShare = async () => {
-    const resultText = hasCustomValues ? customFaceValues[currentNumber - 1] : String(currentNumber);
-    const text = `I rolled ${resultText} on The Dice! 🎲\n${PLAY_STORE_URL}`;
+    const resultText = hasCustomImages
+      ? `Face ${currentNumber}`
+      : hasCustomValues
+        ? customFaceValues[currentNumber - 1]
+        : String(currentNumber);
+    const text = `I rolled ${resultText} on The Dice!\n${PLAY_STORE_URL}`;
     try {
       if (navigator.share) {
         await navigator.share({ text });
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(text);
+        return;
       }
     } catch {
-      // User cancelled share
+      // Share cancelled or failed, fall through to clipboard
     }
+    // Clipboard fallback
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        setShareToast('Copied to clipboard!');
+      } else {
+        // Last resort: textarea copy method
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        setShareToast('Copied to clipboard!');
+      }
+    } catch {
+      setShareToast('Could not share');
+    }
+    setTimeout(() => setShareToast(''), 2000);
   };
 
   // Save bottom sheet
@@ -326,15 +372,18 @@ export default function DicePage({ onNavigateToConfigs, onNavigateToSkins }: Dic
       </div>
 
       <div className="result-container">
-        <p className={`result-number ${hasRolled && !isRolling ? 'result-pop' : ''}`} key={resultKey}>
-          {!isRolling
-            ? (hasCustomImages ? currentNumber : hasCustomValues ? customFaceValues[currentNumber - 1] : currentNumber)
-            : '...'}
-        </p>
-        {hasRolled && !isRolling && (
-          <button className="share-btn" onClick={handleShare} aria-label="Share result">
-            <ShareIcon size={20} />
-          </button>
+        {hasCustomImages ? (
+          hasRolled && !isRolling ? (
+            <p className="result-image-label result-pop" key={resultKey}>Face {currentNumber}</p>
+          ) : isRolling ? (
+            <p className="result-number">...</p>
+          ) : null
+        ) : (
+          <p className={`result-number ${hasRolled && !isRolling ? 'result-pop' : ''}`} key={resultKey}>
+            {!isRolling
+              ? (hasCustomValues ? customFaceValues[currentNumber - 1] : currentNumber)
+              : '...'}
+          </p>
         )}
       </div>
 
@@ -366,6 +415,17 @@ export default function DicePage({ onNavigateToConfigs, onNavigateToSkins }: Dic
       >
         {isRolling ? 'Rolling...' : 'Roll Dice'}
       </button>
+
+      {hasRolled && !isRolling && (
+        <button className="share-result-btn" onClick={handleShare}>
+          <ShareIcon size={16} />
+          Share Result
+        </button>
+      )}
+
+      {shareToast && (
+        <div className="share-toast">{shareToast}</div>
+      )}
 
       {/* Roll history */}
       {rollHistory.length > 0 && (

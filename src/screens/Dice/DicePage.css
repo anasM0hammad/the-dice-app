@@ -66,32 +66,65 @@
   animation: resultPop 0.3s ease-out;
 }
 
+.result-image-label {
+  font-size: 18px;
+  font-weight: 600;
+  color: #606070;
+  letter-spacing: 0.3px;
+}
+
+.result-image-label.result-pop {
+  animation: resultPop 0.3s ease-out;
+}
+
 @keyframes resultPop {
   0% { transform: scale(0.8); opacity: 0.5; }
   60% { transform: scale(1.05); }
   100% { transform: scale(1); opacity: 1; }
 }
 
-.share-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
+.share-result-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s, transform 0.15s;
-  color: #505060;
+  gap: 6px;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #808090;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+  animation: fadeInUp 0.3s ease-out;
 }
 
-.share-btn:hover {
+.share-result-btn:hover {
   background-color: rgba(255, 255, 255, 0.06);
   color: #a0a0b0;
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
-.share-btn:active {
-  transform: scale(0.9);
+.share-result-btn:active {
+  transform: scale(0.95);
+}
+
+.share-toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2a2a3e;
+  color: #22c55e;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 3000;
+  animation: fadeInUp 0.2s ease-out;
+  border: 1px solid rgba(34, 197, 94, 0.2);
 }
 
 /* Save This Dice button */
