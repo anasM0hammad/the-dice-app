@@ -340,14 +340,22 @@ export default function DicePage({ onNavigateToConfigs, onNavigateToSkins, isAct
       </div>
 
       {/* Quick dice switcher */}
-      {savedConfigs.length > 0 && (
+      {(savedConfigs.length > 0 || hasCustomImages) && (
         <div className="quick-switcher">
           <button
-            className={`quick-switcher-pill ${!activeConfigId ? 'active' : ''}`}
+            className={`quick-switcher-pill ${!activeConfigId && !hasCustomImages ? 'active' : ''}`}
             onClick={() => handleSwitcherSelect(null)}
           >
             Standard
           </button>
+          {hasCustomImages && (
+            <button
+              className="quick-switcher-pill active"
+              onClick={() => handleSwitcherSelect(null)}
+            >
+              Image Dice
+            </button>
+          )}
           {savedConfigs.map(c => (
             <button
               key={c.id}
