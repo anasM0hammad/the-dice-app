@@ -133,9 +133,24 @@
   transform: rotateY(90deg) translateZ(24px);
 }
 
+/* Left face: rotated -90° around Y then pushed forward (now = leftward) */
+.skin-cube-left {
+  transform: rotateY(-90deg) translateZ(24px);
+}
+
 /* Top face: rotated 90° around X then pushed forward (now = upward) */
 .skin-cube-top {
   transform: rotateX(90deg) translateZ(24px);
+}
+
+/* Bottom face: rotated -90° around X then pushed forward (now = downward) */
+.skin-cube-bottom {
+  transform: rotateX(-90deg) translateZ(24px);
+}
+
+/* Back face: rotated 180° around Y then pushed forward (now = backward) */
+.skin-cube-back {
+  transform: rotateY(180deg) translateZ(24px);
 }
 
 .skin-cube-dots {

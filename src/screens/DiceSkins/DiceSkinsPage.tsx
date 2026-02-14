@@ -18,22 +18,24 @@ function formatTimeRemaining(ms: number): string {
   return `${hours}h ${minutes}m remaining`;
 }
 
-function getFaceStyle(skin: DiceSkin, face: 'front' | 'right' | 'top'): React.CSSProperties {
+function getFaceStyle(skin: DiceSkin, face: 'front' | 'right' | 'top' | 'left' | 'bottom' | 'back'): React.CSSProperties {
   const base = skin.previewGradient || skin.preview;
   const isGradient = !!skin.previewGradient;
 
-  if (face === 'front') {
-    return { background: base };
-  }
-  if (face === 'right') {
-    return isGradient
-      ? { background: base, filter: 'brightness(0.72)' }
-      : { backgroundColor: skin.preview, filter: 'brightness(0.72)' };
-  }
-  // top
+  const brightness: Record<string, number> = {
+    front: 1,
+    back: 1,
+    right: 0.72,
+    left: 0.82,
+    top: 1.18,
+    bottom: 0.58,
+  };
+
+  const b = brightness[face];
+  if (b === 1) return { background: base };
   return isGradient
-    ? { background: base, filter: 'brightness(1.18)' }
-    : { backgroundColor: skin.preview, filter: 'brightness(1.18)' };
+    ? { background: base, filter: `brightness(${b})` }
+    : { backgroundColor: skin.preview, filter: `brightness(${b})` };
 }
 
 export default function DiceSkinsPage({ onBack }: DiceSkinsPageProps) {
@@ -134,6 +136,14 @@ export default function DiceSkinsPage({ onBack }: DiceSkinsPageProps) {
                       ))}
                     </div>
                   </div>
+                  {/* Back face: 6 dots */}
+                  <div className="skin-cube-face skin-cube-back" style={getFaceStyle(skin, 'back')}>
+                    <div className="skin-cube-dots">
+                      {[[-10, -12], [-10, 0], [-10, 12], [10, -12], [10, 0], [10, 12]].map(([x, y], i) => (
+                        <div key={i} className="skin-cube-dot" style={{ backgroundColor: skin.dotColor, left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` }} />
+                      ))}
+                    </div>
+                  </div>
                   {/* Right face: 2 dots (diagonal) */}
                   <div className="skin-cube-face skin-cube-right" style={getFaceStyle(skin, 'right')}>
                     <div className="skin-cube-dots">
@@ -142,10 +152,26 @@ export default function DiceSkinsPage({ onBack }: DiceSkinsPageProps) {
                       ))}
                     </div>
                   </div>
+                  {/* Left face: 5 dots */}
+                  <div className="skin-cube-face skin-cube-left" style={getFaceStyle(skin, 'left')}>
+                    <div className="skin-cube-dots">
+                      {[[-10, -10], [10, -10], [0, 0], [-10, 10], [10, 10]].map(([x, y], i) => (
+                        <div key={i} className="skin-cube-dot" style={{ backgroundColor: skin.dotColor, left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` }} />
+                      ))}
+                    </div>
+                  </div>
                   {/* Top face: 3 dots (diagonal) */}
                   <div className="skin-cube-face skin-cube-top" style={getFaceStyle(skin, 'top')}>
                     <div className="skin-cube-dots">
                       {[[10, -10], [0, 0], [-10, 10]].map(([x, y], i) => (
+                        <div key={i} className="skin-cube-dot" style={{ backgroundColor: skin.dotColor, left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` }} />
+                      ))}
+                    </div>
+                  </div>
+                  {/* Bottom face: 4 dots */}
+                  <div className="skin-cube-face skin-cube-bottom" style={getFaceStyle(skin, 'bottom')}>
+                    <div className="skin-cube-dots">
+                      {[[-10, -10], [10, -10], [-10, 10], [10, 10]].map(([x, y], i) => (
                         <div key={i} className="skin-cube-dot" style={{ backgroundColor: skin.dotColor, left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` }} />
                       ))}
                     </div>
