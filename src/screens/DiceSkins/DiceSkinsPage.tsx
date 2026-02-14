@@ -18,6 +18,24 @@ function formatTimeRemaining(ms: number): string {
   return `${hours}h ${minutes}m remaining`;
 }
 
+function getFaceStyle(skin: DiceSkin, face: 'front' | 'right' | 'top'): React.CSSProperties {
+  const base = skin.previewGradient || skin.preview;
+  const isGradient = !!skin.previewGradient;
+
+  if (face === 'front') {
+    return { background: base };
+  }
+  if (face === 'right') {
+    return isGradient
+      ? { background: base, filter: 'brightness(0.72)' }
+      : { backgroundColor: skin.preview, filter: 'brightness(0.72)' };
+  }
+  // top
+  return isGradient
+    ? { background: base, filter: 'brightness(1.18)' }
+    : { backgroundColor: skin.preview, filter: 'brightness(1.18)' };
+}
+
 export default function DiceSkinsPage({ onBack }: DiceSkinsPageProps) {
   const [activeSkinId, setActiveSkinIdState] = useState(getActiveSkinId);
   const [, setTick] = useState(0);
@@ -108,21 +126,21 @@ export default function DiceSkinsPage({ onBack }: DiceSkinsPageProps) {
                 }}
               >
                 <div className="skin-preview-3d-cube">
-                  <div className="skin-cube-face skin-cube-front" style={{ backgroundColor: skin.preview }}>
+                  <div className="skin-cube-face skin-cube-front" style={getFaceStyle(skin, 'front')}>
                     <div className="skin-cube-dots">
                       {[[-8, -8], [8, -8], [-8, 0], [8, 0], [-8, 8], [8, 8]].map(([x, y], i) => (
                         <div key={i} className="skin-cube-dot" style={{ backgroundColor: skin.dotColor, left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` }} />
                       ))}
                     </div>
                   </div>
-                  <div className="skin-cube-face skin-cube-right" style={{ backgroundColor: skin.preview, filter: 'brightness(0.75)' }}>
+                  <div className="skin-cube-face skin-cube-right" style={getFaceStyle(skin, 'right')}>
                     <div className="skin-cube-dots">
                       {[[0, -8], [0, 0], [0, 8]].map(([x, y], i) => (
                         <div key={i} className="skin-cube-dot" style={{ backgroundColor: skin.dotColor, left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` }} />
                       ))}
                     </div>
                   </div>
-                  <div className="skin-cube-face skin-cube-top" style={{ backgroundColor: skin.preview, filter: 'brightness(1.15)' }}>
+                  <div className="skin-cube-face skin-cube-top" style={getFaceStyle(skin, 'top')}>
                     <div className="skin-cube-dots">
                       {[[-6, -3], [6, -3], [0, 3]].map(([x, y], i) => (
                         <div key={i} className="skin-cube-dot" style={{ backgroundColor: skin.dotColor, left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` }} />

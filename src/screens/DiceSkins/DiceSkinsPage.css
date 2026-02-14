@@ -104,28 +104,35 @@
   height: 100%;
   position: relative;
   transform-style: preserve-3d;
-  transform: rotateX(-20deg) rotateY(30deg);
+  transform: rotateX(-25deg) rotateY(35deg);
 }
 
 .skin-cube-face {
   position: absolute;
   width: 48px;
   height: 48px;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.12);
+  backface-visibility: hidden;
 }
 
 .skin-cube-front {
-  transform: translateZ(24px) translateX(12px) translateY(12px);
+  transform: translateZ(24px);
+  left: 12px;
+  top: 12px;
 }
 
 .skin-cube-right {
-  transform: rotateY(90deg) translateZ(24px) translateX(12px) translateY(12px);
+  transform: rotateY(90deg) translateZ(24px);
+  left: 12px;
+  top: 12px;
   width: 48px;
 }
 
 .skin-cube-top {
-  transform: rotateX(90deg) translateZ(24px) translateX(12px) translateY(12px);
+  transform: rotateX(90deg) translateZ(24px);
+  left: 12px;
+  top: 12px;
   height: 48px;
 }
 
