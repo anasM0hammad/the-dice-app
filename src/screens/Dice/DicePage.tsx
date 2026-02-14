@@ -39,6 +39,7 @@ export default function DicePage({ onNavigateToConfigs, onNavigateToSkins, isAct
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [customFaceValues, setCustomFaceValues] = useState<string[]>([]);
   const [customFaceImages, setCustomFaceImages] = useState<string[]>([]);
+  const [storedSessionImages, setStoredSessionImages] = useState<string[]>([]);
   const [showReviewPrompt, setShowReviewPrompt] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(() =>
     localStorage.getItem(SOUND_ENABLED_KEY) !== 'false'
@@ -192,6 +193,7 @@ export default function DicePage({ onNavigateToConfigs, onNavigateToSkins, isAct
 
   const handleImageDiceApply = (imageUrls: string[]) => {
     setCustomFaceImages(imageUrls);
+    setStoredSessionImages([]); // Clear stored — fresh images are now active
     if (imageUrls.every(img => img !== '')) {
       // Image dice active — clear text custom values and active config
       setCustomFaceValues([]);
@@ -207,8 +209,14 @@ export default function DicePage({ onNavigateToConfigs, onNavigateToSkins, isAct
   };
 
   // Quick dice switcher
+  const hasStoredImages = storedSessionImages.length === 6 && storedSessionImages.every(img => img !== '');
+
   const handleSwitcherSelect = (configId: string | null) => {
-    setCustomFaceImages([]); // Clear images on config switch
+    // Preserve images in session when switching away from image dice
+    if (hasCustomImages) {
+      setStoredSessionImages([...customFaceImages]);
+    }
+    setCustomFaceImages([]); // Deactivate image dice
     if (configId === null) {
       clearActiveConfig();
       setCustomFaceValues([]);
@@ -222,6 +230,16 @@ export default function DicePage({ onNavigateToConfigs, onNavigateToSkins, isAct
       setActiveConfigIdState(configId);
       const config = getConfigById(configId);
       if (config) setCustomFaceValues(config.faceValues);
+    }
+  };
+
+  const handleImageDiceReactivate = () => {
+    if (hasStoredImages) {
+      setCustomFaceImages([...storedSessionImages]);
+      setStoredSessionImages([]);
+      setCustomFaceValues([]);
+      clearActiveConfig();
+      setActiveConfigIdState(null);
     }
   };
 
@@ -340,7 +358,7 @@ export default function DicePage({ onNavigateToConfigs, onNavigateToSkins, isAct
       </div>
 
       {/* Quick dice switcher */}
-      {(savedConfigs.length > 0 || hasCustomImages) && (
+      {(savedConfigs.length > 0 || hasCustomImages || hasStoredImages) && (
         <div className="quick-switcher">
           <button
             className={`quick-switcher-pill ${!activeConfigId && !hasCustomImages ? 'active' : ''}`}
@@ -348,10 +366,10 @@ export default function DicePage({ onNavigateToConfigs, onNavigateToSkins, isAct
           >
             Standard
           </button>
-          {hasCustomImages && (
+          {(hasCustomImages || hasStoredImages) && (
             <button
-              className="quick-switcher-pill active"
-              onClick={() => handleSwitcherSelect(null)}
+              className={`quick-switcher-pill ${hasCustomImages ? 'active' : ''}`}
+              onClick={hasCustomImages ? () => handleSwitcherSelect(null) : handleImageDiceReactivate}
             >
               Image Dice
             </button>
