@@ -98,6 +98,7 @@
   height: 76px;
   perspective: 300px;
   transition: filter 0.3s;
+  filter: drop-shadow(2px 3px 4px rgba(0, 0, 0, 0.45));
 }
 
 .skin-preview-3d-cube {
@@ -118,9 +119,8 @@
   height: 48px;
   top: 0;
   left: 0;
-  border-radius: 5px;
   box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  backface-visibility: hidden;
 }
 
 /* Front face: pushed forward by half the cube depth */
@@ -145,8 +145,8 @@
 
 .skin-cube-dot {
   position: absolute;
-  width: 5px;
-  height: 5px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   transform: translate(-50%, -50%);
 }

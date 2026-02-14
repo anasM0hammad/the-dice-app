@@ -545,7 +545,7 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues, customFaceImage
           color={mat?.color ?? '#FFFFFF'}
           roughness={mat?.roughness ?? 0.3}
           metalness={mat?.metalness ?? 0.3}
-          envMapIntensity={1.0}
+          envMapIntensity={2.0}
           clearcoat={mat?.clearcoat ?? 0}
           clearcoatRoughness={mat?.clearcoatRoughness ?? 0}
           transmission={mat?.transmission ?? 0}
