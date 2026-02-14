@@ -204,6 +204,7 @@ export default function ConfigManagerPage({ onBack }: ConfigManagerPageProps) {
           {configs.length}/{MAX_CONFIGS}
         </span>
       </div>
+      <p className="config-hint">Long press any dice for a 3D preview</p>
 
       {error && <div className="config-error" style={{ margin: '0 20px' }}>{error}</div>}
 

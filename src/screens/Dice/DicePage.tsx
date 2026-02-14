@@ -134,7 +134,12 @@ export default function DicePage({ onNavigateToConfigs, onNavigateToSkins, isAct
     }
   }, [isRolling, playSound]);
 
-  useShakeDetection(handleRoll, { threshold: 25, cooldown: 3500 });
+  // Only respond to shake when dice page is active (not on skins/config pages)
+  const handleShake = useCallback(() => {
+    if (isActive) handleRoll();
+  }, [isActive, handleRoll]);
+
+  useShakeDetection(handleShake, { threshold: 25, cooldown: 3500 });
 
   const hasCustomValues = customFaceValues.length === 6 && customFaceValues.every(val => val.trim() !== '');
   const hasCustomImages = customFaceImages.length === 6 && customFaceImages.every(img => img !== '');
@@ -228,7 +233,7 @@ export default function DicePage({ onNavigateToConfigs, onNavigateToSkins, isAct
       : hasCustomValues
         ? customFaceValues[currentNumber - 1]
         : String(currentNumber);
-    const text = `I rolled ${resultText} on The Dice!\n${PLAY_STORE_URL}`;
+    const text = `I rolled ${resultText} on Dice 3D!\n${PLAY_STORE_URL}`;
     try {
       if (navigator.share) {
         await navigator.share({ text });
@@ -330,7 +335,7 @@ export default function DicePage({ onNavigateToConfigs, onNavigateToSkins, isAct
       />
 
       <div className="header">
-        <h1 className="title">The Dice</h1>
+        <h1 className="title">Dice 3D</h1>
         <p className="subtitle">Drag to rotate · Tap button to roll</p>
       </div>
 
@@ -499,7 +504,7 @@ export default function DicePage({ onNavigateToConfigs, onNavigateToSkins, isAct
       {showReviewPrompt && (
         <div className="review-overlay">
           <div className="review-card">
-            <p className="review-title">Enjoying The Dice?</p>
+            <p className="review-title">Enjoying Dice 3D?</p>
             <p className="review-subtitle">You've been rolling a lot! Would you like to rate us on the Play Store?</p>
             <div className="review-buttons">
               <button className="review-btn review-btn-primary" onClick={() => handleDismissReview(true)}>

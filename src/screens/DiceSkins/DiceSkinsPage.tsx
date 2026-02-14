@@ -83,6 +83,7 @@ export default function DiceSkinsPage({ onBack }: DiceSkinsPageProps) {
         </button>
         <h1 className="skins-title">Dice Skins</h1>
       </div>
+      <p className="skins-hint">Long press any skin for a 3D preview</p>
 
       <div className="skins-grid">
         {SKINS.map(skin => {
@@ -101,24 +102,33 @@ export default function DiceSkinsPage({ onBack }: DiceSkinsPageProps) {
               onContextMenu={e => e.preventDefault()}
             >
               <div
-                className="skin-preview"
+                className="skin-preview-3d-wrapper"
                 style={{
-                  backgroundColor: skin.preview,
-                  boxShadow: isActive ? `0 0 16px ${skin.preview}40` : 'none',
+                  filter: isActive ? `drop-shadow(0 0 8px ${skin.preview}60)` : 'none',
                 }}
               >
-                <div className="skin-preview-dots">
-                  {[[-6, -6], [6, -6], [-6, 0], [6, 0], [-6, 6], [6, 6]].map(([x, y], i) => (
-                    <div
-                      key={i}
-                      className="skin-preview-dot"
-                      style={{
-                        backgroundColor: skin.dotColor,
-                        left: `calc(50% + ${x}px)`,
-                        top: `calc(50% + ${y}px)`,
-                      }}
-                    />
-                  ))}
+                <div className="skin-preview-3d-cube">
+                  <div className="skin-cube-face skin-cube-front" style={{ backgroundColor: skin.preview }}>
+                    <div className="skin-cube-dots">
+                      {[[-8, -8], [8, -8], [-8, 0], [8, 0], [-8, 8], [8, 8]].map(([x, y], i) => (
+                        <div key={i} className="skin-cube-dot" style={{ backgroundColor: skin.dotColor, left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` }} />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="skin-cube-face skin-cube-right" style={{ backgroundColor: skin.preview, filter: 'brightness(0.75)' }}>
+                    <div className="skin-cube-dots">
+                      {[[0, -8], [0, 0], [0, 8]].map(([x, y], i) => (
+                        <div key={i} className="skin-cube-dot" style={{ backgroundColor: skin.dotColor, left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` }} />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="skin-cube-face skin-cube-top" style={{ backgroundColor: skin.preview, filter: 'brightness(1.15)' }}>
+                    <div className="skin-cube-dots">
+                      {[[-6, -3], [6, -3], [0, 3]].map(([x, y], i) => (
+                        <div key={i} className="skin-cube-dot" style={{ backgroundColor: skin.dotColor, left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` }} />
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 {isActive && <div className="skin-active-check">✓</div>}
               </div>

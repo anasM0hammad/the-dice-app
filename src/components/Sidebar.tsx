@@ -41,7 +41,7 @@ export default function Sidebar({ isOpen, onClose, onCustomFaces, onManageConfig
         <div className="sidebar-header">
           <div className="sidebar-brand">
             <DiceIcon size={28} color="#DC2626" />
-            <h2 className="sidebar-title">The Dice</h2>
+            <h2 className="sidebar-title">Dice 3D</h2>
           </div>
           <button className="sidebar-close" onClick={onClose} aria-label="Close menu">
             <CloseIcon size={18} color="#a0a0b0" />
