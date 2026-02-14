@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
+import { useShakeDetection } from '../../hooks/useShakeDetection';
 import './OnboardingScreen.css';
 
 const Dice3D = lazy(() => import('../../components/Dice3D'));
@@ -45,7 +46,19 @@ const steps = [
   },
 ];
 
-// Step 1: Interactive 3D dice with roll button
+// Phone frame wrapper component
+function PhoneFrame({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="onboarding-phone-frame">
+      <div className="phone-frame-notch" />
+      <div className="phone-frame-content">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Step 1: Interactive 3D dice with roll button + shake support
 function RollVisual() {
   const [isRolling, setIsRolling] = useState(false);
   const [result, setResult] = useState(0);
@@ -59,17 +72,26 @@ function RollVisual() {
     setResult(res);
   }, []);
 
+  // Enable shake to actually roll the dice on this onboarding screen
+  useShakeDetection(handleRoll, { threshold: 25, cooldown: 3500 });
+
   return (
     <div className="onboarding-roll-visual">
-      <div className="onboarding-3d-container">
-        <Suspense fallback={<div className="onboarding-3d-loading">Loading...</div>}>
-          <Dice3D
-            isRolling={isRolling}
-            onRollComplete={handleRollComplete}
-          />
-        </Suspense>
-      </div>
-      <div className="onboarding-roll-controls">
+      <PhoneFrame>
+        <div className="onboarding-3d-container">
+          <Suspense fallback={<div className="onboarding-3d-loading">Loading...</div>}>
+            <Dice3D
+              isRolling={isRolling}
+              onRollComplete={handleRollComplete}
+            />
+          </Suspense>
+        </div>
+        {result > 0 && !isRolling && (
+          <span className="onboarding-roll-result" key={result}>{result}</span>
+        )}
+        {isRolling && (
+          <span className="onboarding-roll-result rolling">...</span>
+        )}
         <button
           className={`onboarding-roll-btn ${isRolling ? 'rolling' : ''}`}
           onClick={handleRoll}
@@ -77,10 +99,7 @@ function RollVisual() {
         >
           {isRolling ? 'Rolling...' : 'Roll Dice'}
         </button>
-        {result > 0 && !isRolling && (
-          <span className="onboarding-roll-result">{result}</span>
-        )}
-      </div>
+      </PhoneFrame>
       <div className="onboarding-gesture-hints">
         <div className="onboarding-gesture-hint">
           <div className="onboarding-tap-gesture">
@@ -106,18 +125,20 @@ function RollVisual() {
   );
 }
 
-// Step 2: Interactive 3D dice for drag exploration
+// Step 2: Interactive 3D dice for drag exploration in phone frame
 function DragVisual() {
   return (
     <div className="onboarding-drag-visual">
-      <div className="onboarding-3d-container">
-        <Suspense fallback={<div className="onboarding-3d-loading">Loading...</div>}>
-          <Dice3D
-            isRolling={false}
-            onRollComplete={() => {}}
-          />
-        </Suspense>
-      </div>
+      <PhoneFrame>
+        <div className="onboarding-3d-container">
+          <Suspense fallback={<div className="onboarding-3d-loading">Loading...</div>}>
+            <Dice3D
+              isRolling={false}
+              onRollComplete={() => {}}
+            />
+          </Suspense>
+        </div>
+      </PhoneFrame>
       <div className="onboarding-swipe-indicator">
         <svg width="80" height="40" viewBox="0 0 80 40" className="onboarding-finger-motion">
           <path d="M15 20 C30 20 50 20 65 20" stroke="#DC2626" strokeWidth="2" strokeLinecap="round" fill="none" strokeDasharray="4 4" />
@@ -131,23 +152,31 @@ function DragVisual() {
   );
 }
 
-// Step 3: Faces forming into a dice animation
+// Step 3: Faces form grid → float/roam → assemble into dice → rotate → repeat with icons
 function CreateVisual() {
-  const [phase, setPhase] = useState<'text' | 'collapse-text' | 'icons' | 'collapse-icons'>('text');
+  const [phase, setPhase] = useState<'grid-text' | 'float-text' | 'dice-text' | 'grid-icons' | 'float-icons' | 'dice-icons'>('grid-text');
   const phaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const cycle = () => {
-      setPhase('text');
+      // Text iteration
+      setPhase('grid-text');
       phaseTimerRef.current = setTimeout(() => {
-        setPhase('collapse-text');
+        setPhase('float-text');
         phaseTimerRef.current = setTimeout(() => {
-          setPhase('icons');
+          setPhase('dice-text');
           phaseTimerRef.current = setTimeout(() => {
-            setPhase('collapse-icons');
-            phaseTimerRef.current = setTimeout(cycle, 1500);
-          }, 2000);
-        }, 1500);
+            // Icons iteration
+            setPhase('grid-icons');
+            phaseTimerRef.current = setTimeout(() => {
+              setPhase('float-icons');
+              phaseTimerRef.current = setTimeout(() => {
+                setPhase('dice-icons');
+                phaseTimerRef.current = setTimeout(cycle, 2500);
+              }, 1800);
+            }, 2000);
+          }, 2500);
+        }, 1800);
       }, 2000);
     };
     cycle();
@@ -159,47 +188,60 @@ function CreateVisual() {
   const textFaces = ['A', 'B', 'C', 'D', 'E', 'F'];
   const iconFaces = ['★', '♥', '♦', '♣', '♠', '●'];
 
-  const isCollapsing = phase === 'collapse-text' || phase === 'collapse-icons';
-  const faces = phase === 'icons' || phase === 'collapse-icons' ? iconFaces : textFaces;
+  const isTextPhase = phase.endsWith('-text');
+  const faces = isTextPhase ? textFaces : iconFaces;
+  const isGrid = phase.startsWith('grid');
+  const isFloat = phase.startsWith('float');
+  const isDice = phase.startsWith('dice');
 
-  // Positions for dice-face formation (cross shape of a cube net → collapse to center)
-  const gridPositions = [
-    { gridRow: 1, gridCol: 1 },
-    { gridRow: 1, gridCol: 2 },
-    { gridRow: 1, gridCol: 3 },
-    { gridRow: 2, gridCol: 1 },
-    { gridRow: 2, gridCol: 2 },
-    { gridRow: 2, gridCol: 3 },
+  // Randomized float positions for the roaming phase
+  const floatPositions = [
+    { x: -40, y: -30, rotate: 15 },
+    { x: 35, y: -45, rotate: -20 },
+    { x: -50, y: 20, rotate: 25 },
+    { x: 45, y: 15, rotate: -15 },
+    { x: -20, y: 50, rotate: 10 },
+    { x: 30, y: 45, rotate: -25 },
   ];
 
   return (
     <div className="onboarding-create-visual">
-      <div className={`onboarding-faces-container ${isCollapsing ? 'collapsing' : ''}`}>
-        {faces.map((face, i) => (
+      <div className="onboarding-faces-stage">
+        {/* Grid / Float phase */}
+        {!isDice && faces.map((face, i) => (
           <div
             key={`${phase}-${i}`}
-            className={`onboarding-face-cell ${isCollapsing ? 'face-collapse' : 'face-expand'}`}
-            style={{
-              animationDelay: `${i * 0.1}s`,
-              gridRow: gridPositions[i].gridRow,
-              gridColumn: gridPositions[i].gridCol,
+            className={`onboarding-face-cell ${isGrid ? 'face-in-grid' : 'face-floating'}`}
+            style={isFloat ? {
+              '--float-x': `${floatPositions[i].x}px`,
+              '--float-y': `${floatPositions[i].y}px`,
+              '--float-rotate': `${floatPositions[i].rotate}deg`,
+              animationDelay: `${i * 0.08}s`,
+            } as React.CSSProperties : {
+              animationDelay: `${i * 0.08}s`,
             }}
+            data-grid-index={i}
           >
             {face}
           </div>
         ))}
-        {isCollapsing && (
-          <div className="onboarding-dice-form">
-            <div className="onboarding-dice-cube">
+
+        {/* Dice phase - assembled cube that rotates */}
+        {isDice && (
+          <div className="onboarding-assembled-dice">
+            <div className="onboarding-dice-cube-3d">
               <div className="cube-face cube-front">{faces[0]}</div>
+              <div className="cube-face cube-back">{faces[5]}</div>
               <div className="cube-face cube-right">{faces[1]}</div>
+              <div className="cube-face cube-left">{faces[4]}</div>
               <div className="cube-face cube-top">{faces[2]}</div>
+              <div className="cube-face cube-bottom">{faces[3]}</div>
             </div>
           </div>
         )}
       </div>
       <div className="onboarding-create-label">
-        {phase === 'text' || phase === 'collapse-text' ? 'Custom text' : 'Custom images'}
+        {isTextPhase ? 'Custom text' : 'Custom icons'}
       </div>
     </div>
   );

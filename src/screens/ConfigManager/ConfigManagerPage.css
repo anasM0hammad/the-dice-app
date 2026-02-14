@@ -60,6 +60,14 @@
   color: #f59e0b;
 }
 
+.config-hint {
+  font-size: 12px;
+  color: #505060;
+  text-align: center;
+  padding: 8px 20px 0;
+  margin: 0;
+}
+
 .config-list {
   flex: 1;
   overflow-y: auto;

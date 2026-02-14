@@ -47,6 +47,14 @@
   margin: 0;
 }
 
+.skins-hint {
+  font-size: 12px;
+  color: #505060;
+  text-align: center;
+  padding: 8px 20px 0;
+  margin: 0;
+}
+
 .skins-grid {
   flex: 1;
   overflow-y: auto;
@@ -83,21 +91,50 @@
   border-color: #DC2626;
 }
 
-.skin-preview {
-  width: 64px;
-  height: 64px;
-  border-radius: 12px;
+.skin-preview-3d-wrapper {
   position: relative;
-  transition: box-shadow 0.3s;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 72px;
+  height: 72px;
+  perspective: 200px;
+  transition: filter 0.3s;
 }
 
-.skin-preview-dots {
+.skin-preview-3d-cube {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(-20deg) rotateY(30deg);
+}
+
+.skin-cube-face {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.skin-cube-front {
+  transform: translateZ(24px) translateX(12px) translateY(12px);
+}
+
+.skin-cube-right {
+  transform: rotateY(90deg) translateZ(24px) translateX(12px) translateY(12px);
+  width: 48px;
+}
+
+.skin-cube-top {
+  transform: rotateX(90deg) translateZ(24px) translateX(12px) translateY(12px);
+  height: 48px;
+}
+
+.skin-cube-dots {
   position: absolute;
   inset: 0;
 }
 
-.skin-preview-dot {
+.skin-cube-dot {
   position: absolute;
   width: 5px;
   height: 5px;
@@ -107,8 +144,8 @@
 
 .skin-active-check {
   position: absolute;
-  bottom: -4px;
-  right: -4px;
+  bottom: 0;
+  right: 0;
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -120,6 +157,7 @@
   align-items: center;
   justify-content: center;
   border: 2px solid #2a2a3e;
+  z-index: 2;
 }
 
 .skin-name {
