@@ -51,6 +51,8 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues, customFaceImage
   const tumbleDirectionRef = useRef({ x: 1.3, y: 0.9, z: 0.4 });
   const tumbleSpeedRef = useRef(18);
   const isRollingRef = useRef(isRolling);
+  const settleStartQuatRef = useRef(new THREE.Quaternion());
+  const settleTargetQuatRef = useRef(new THREE.Quaternion());
   const texturesCacheRef = useRef<Map<string, THREE.DataTexture>>(new Map());
   const imageTexturesRef = useRef<Map<string, THREE.Texture>>(new Map());
   const [, forceUpdate] = useState({});
@@ -409,8 +411,8 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues, customFaceImage
     if (isRollingRef.current) {
       rollTimeRef.current += delta;
 
-      const tumblingDuration = 2.0;
-      const settlingDuration = 1.0;
+      const tumblingDuration = 1.8;
+      const settlingDuration = 1.4;
       const totalDuration = tumblingDuration + settlingDuration;
 
       if (rollTimeRef.current < tumblingDuration) {
@@ -428,38 +430,27 @@ function DiceMesh({ isRolling, onRollComplete, customFaceValues, customFaceImage
         if (targetResultRef.current === 0) {
           const currentTopFace = getTopFace(diceGroupRef.current.rotation);
           targetResultRef.current = currentTopFace;
+
+          // Capture current orientation as SLERP start
+          settleStartQuatRef.current.copy(diceGroupRef.current.quaternion);
+
+          // Compute target quaternion from face rotation
+          const target = faceRotations[targetResultRef.current];
+          settleTargetQuatRef.current.setFromEuler(
+            new THREE.Euler(target[0], target[1], target[2])
+          );
         }
 
         const settleProgress = (rollTimeRef.current - tumblingDuration) / settlingDuration;
+        // Cubic ease-out: starts with momentum, decelerates smoothly to zero
+        const easedProgress = 1 - Math.pow(1 - settleProgress, 3);
 
-        const tumbleProgress = 1.0;
-        const easeOut = 1 - Math.pow(1 - tumbleProgress, 2);
-        const baseSpeed = tumbleSpeedRef.current;
-        const tumblingSpeed = baseSpeed * (1 - easeOut * 0.85);
-
-        const currentSpeed = tumblingSpeed * (1 - settleProgress * 0.95);
-
-        diceGroupRef.current.rotation.x += currentSpeed * delta * tumbleDirectionRef.current.x;
-        diceGroupRef.current.rotation.y += currentSpeed * delta * tumbleDirectionRef.current.y;
-        diceGroupRef.current.rotation.z += currentSpeed * delta * tumbleDirectionRef.current.z;
-
-        const alignStrength = settleProgress * settleProgress;
-
-        const target = faceRotations[targetResultRef.current];
-
-        const normalizeAngle = (angle: number) => {
-          while (angle > Math.PI) angle -= 2 * Math.PI;
-          while (angle < -Math.PI) angle += 2 * Math.PI;
-          return angle;
-        };
-
-        const deltaX = normalizeAngle(target[0] - diceGroupRef.current.rotation.x);
-        const deltaY = normalizeAngle(target[1] - diceGroupRef.current.rotation.y);
-        const deltaZ = normalizeAngle(target[2] - diceGroupRef.current.rotation.z);
-
-        diceGroupRef.current.rotation.x += deltaX * alignStrength * delta * 3;
-        diceGroupRef.current.rotation.y += deltaY * alignStrength * delta * 3;
-        diceGroupRef.current.rotation.z += deltaZ * alignStrength * delta * 3;
+        // Smooth SLERP from tumbling orientation to target face
+        diceGroupRef.current.quaternion.slerpQuaternions(
+          settleStartQuatRef.current,
+          settleTargetQuatRef.current,
+          easedProgress
+        );
 
       } else {
         const target = faceRotations[targetResultRef.current];
