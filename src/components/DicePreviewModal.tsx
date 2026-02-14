@@ -196,7 +196,7 @@ function AutoRotatingDice({ skin, customFaceValues }: { skin: DiceSkin; customFa
           color={mat.color}
           roughness={mat.roughness}
           metalness={mat.metalness}
-          envMapIntensity={1.0}
+          envMapIntensity={2.0}
           clearcoat={mat.clearcoat ?? 0}
           clearcoatRoughness={mat.clearcoatRoughness ?? 0}
           transmission={mat.transmission ?? 0}

@@ -126,23 +126,26 @@ export default function DiceSkinsPage({ onBack }: DiceSkinsPageProps) {
                 }}
               >
                 <div className="skin-preview-3d-cube">
+                  {/* Front face: 1 dot (center) */}
                   <div className="skin-cube-face skin-cube-front" style={getFaceStyle(skin, 'front')}>
                     <div className="skin-cube-dots">
-                      {[[-8, -8], [8, -8], [-8, 0], [8, 0], [-8, 8], [8, 8]].map(([x, y], i) => (
+                      {[[0, 0]].map(([x, y], i) => (
                         <div key={i} className="skin-cube-dot" style={{ backgroundColor: skin.dotColor, left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` }} />
                       ))}
                     </div>
                   </div>
+                  {/* Right face: 2 dots (diagonal) */}
                   <div className="skin-cube-face skin-cube-right" style={getFaceStyle(skin, 'right')}>
                     <div className="skin-cube-dots">
-                      {[[0, -8], [0, 0], [0, 8]].map(([x, y], i) => (
+                      {[[10, -10], [-10, 10]].map(([x, y], i) => (
                         <div key={i} className="skin-cube-dot" style={{ backgroundColor: skin.dotColor, left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` }} />
                       ))}
                     </div>
                   </div>
+                  {/* Top face: 3 dots (diagonal) */}
                   <div className="skin-cube-face skin-cube-top" style={getFaceStyle(skin, 'top')}>
                     <div className="skin-cube-dots">
-                      {[[-6, -3], [6, -3], [0, 3]].map(([x, y], i) => (
+                      {[[10, -10], [0, 0], [-10, 10]].map(([x, y], i) => (
                         <div key={i} className="skin-cube-dot" style={{ backgroundColor: skin.dotColor, left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` }} />
                       ))}
                     </div>
