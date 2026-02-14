@@ -18,6 +18,40 @@ function createCanvas(size: number): { canvas: HTMLCanvasElement; ctx: CanvasRen
   return { canvas, ctx };
 }
 
+// Simple 2D noise for natural texture variation
+function valueNoise(x: number, y: number, seed: number): number {
+  const ix = Math.floor(x);
+  const iy = Math.floor(y);
+  const fx = x - ix;
+  const fy = y - iy;
+  const hash = (a: number, b: number) => {
+    let h = (a * 374761393 + b * 668265263 + seed * 1274126177) | 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    return ((h ^ (h >>> 16)) & 0x7fffffff) / 0x7fffffff;
+  };
+  const n00 = hash(ix, iy);
+  const n10 = hash(ix + 1, iy);
+  const n01 = hash(ix, iy + 1);
+  const n11 = hash(ix + 1, iy + 1);
+  const sx = fx * fx * (3 - 2 * fx);
+  const sy = fy * fy * (3 - 2 * fy);
+  return n00 * (1 - sx) * (1 - sy) + n10 * sx * (1 - sy) + n01 * (1 - sx) * sy + n11 * sx * sy;
+}
+
+function fbmNoise(x: number, y: number, octaves: number, seed: number): number {
+  let value = 0;
+  let amplitude = 1;
+  let frequency = 1;
+  let totalAmp = 0;
+  for (let i = 0; i < octaves; i++) {
+    value += valueNoise(x * frequency, y * frequency, seed + i * 17) * amplitude;
+    totalAmp += amplitude;
+    amplitude *= 0.5;
+    frequency *= 2;
+  }
+  return value / totalAmp;
+}
+
 export function generateWoodTexture(): THREE.CanvasTexture {
   const cached = textureCache.get('wood');
   if (cached) return cached;
@@ -26,7 +60,6 @@ export function generateWoodTexture(): THREE.CanvasTexture {
   const { canvas, ctx } = createCanvas(size);
   const rand = seededRandom(42);
 
-  // Base wood color
   ctx.fillStyle = '#8B5E3C';
   ctx.fillRect(0, 0, size, size);
 
@@ -47,7 +80,7 @@ export function generateWoodTexture(): THREE.CanvasTexture {
     ctx.stroke();
   }
 
-  // Fine grain lines along the wood
+  // Fine grain lines
   for (let i = 0; i < 120; i++) {
     const y = rand() * size;
     const startX = rand() * size * 0.3;
@@ -65,7 +98,7 @@ export function generateWoodTexture(): THREE.CanvasTexture {
     ctx.stroke();
   }
 
-  // Subtle knot spots
+  // Knot spots
   for (let i = 0; i < 3; i++) {
     const kx = rand() * size;
     const ky = rand() * size;
@@ -78,7 +111,7 @@ export function generateWoodTexture(): THREE.CanvasTexture {
     ctx.fillRect(kx - kr, ky - kr, kr * 2, kr * 2);
   }
 
-  // Varnish-like overlay for depth
+  // Varnish overlay
   const varnish = ctx.createLinearGradient(0, 0, size, size);
   varnish.addColorStop(0, 'rgba(255, 220, 160, 0.08)');
   varnish.addColorStop(0.5, 'rgba(180, 120, 60, 0.05)');
@@ -100,63 +133,69 @@ export function generateLeatherTexture(): THREE.CanvasTexture {
 
   const size = 512;
   const { canvas, ctx } = createCanvas(size);
-  const rand = seededRandom(123);
 
   // Base leather color
   ctx.fillStyle = '#6B3A2A';
   ctx.fillRect(0, 0, size, size);
 
-  // Create pebbled/grain pattern
-  for (let i = 0; i < 2000; i++) {
-    const x = rand() * size;
-    const y = rand() * size;
-    const r = 2 + rand() * 5;
-    const lightness = 20 + rand() * 18;
-    const alpha = 0.1 + rand() * 0.15;
-
-    ctx.beginPath();
-    ctx.ellipse(x, y, r, r * (0.7 + rand() * 0.6), rand() * Math.PI, 0, Math.PI * 2);
-    ctx.fillStyle = `hsla(15, 55%, ${lightness}%, ${alpha})`;
-    ctx.fill();
+  // Pixel-level grain using noise for realistic pebbled texture
+  const imageData = ctx.getImageData(0, 0, size, size);
+  const pixels = imageData.data;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const idx = (y * size + x) * 4;
+      // Multi-octave noise for organic pebble pattern
+      const n1 = fbmNoise(x / 28, y / 28, 4, 100);
+      const n2 = fbmNoise(x / 12, y / 12, 3, 200);
+      const n3 = fbmNoise(x / 60, y / 60, 2, 300);
+      // Combine: large-scale color variation + mid pebbles + fine grain
+      const variation = (n1 - 0.5) * 40 + (n2 - 0.5) * 25 + (n3 - 0.5) * 15;
+      pixels[idx] = Math.max(0, Math.min(255, pixels[idx] + variation));
+      pixels[idx + 1] = Math.max(0, Math.min(255, pixels[idx + 1] + variation * 0.7));
+      pixels[idx + 2] = Math.max(0, Math.min(255, pixels[idx + 2] + variation * 0.5));
+    }
   }
+  ctx.putImageData(imageData, 0, 0);
 
-  // Larger creases/wrinkles
-  for (let i = 0; i < 20; i++) {
+  const rand = seededRandom(123);
+
+  // Deep crease lines for worn leather look
+  for (let i = 0; i < 35; i++) {
     const startX = rand() * size;
     const startY = rand() * size;
     ctx.beginPath();
     ctx.moveTo(startX, startY);
-    for (let j = 0; j < 5; j++) {
-      const cpx = startX + (rand() - 0.5) * 100;
-      const cpy = startY + (rand() - 0.5) * 100;
-      const ex = startX + (rand() - 0.5) * 150;
-      const ey = startY + (rand() - 0.5) * 150;
-      ctx.quadraticCurveTo(cpx, cpy, ex, ey);
+    let cx = startX;
+    let cy = startY;
+    for (let j = 0; j < 8; j++) {
+      cx += (rand() - 0.5) * 80;
+      cy += (rand() - 0.5) * 80;
+      ctx.lineTo(cx, cy);
     }
-    ctx.strokeStyle = `hsla(12, 50%, ${15 + rand() * 10}%, ${0.08 + rand() * 0.07})`;
-    ctx.lineWidth = 0.5 + rand() * 1.5;
+    ctx.strokeStyle = `hsla(12, 55%, ${12 + rand() * 10}%, ${0.10 + rand() * 0.10})`;
+    ctx.lineWidth = 0.5 + rand() * 2;
     ctx.stroke();
   }
 
   // Stitching lines along edges
   for (let edge = 0; edge < 4; edge++) {
-    const margin = 15 + rand() * 5;
+    const margin = 14;
     ctx.beginPath();
     if (edge === 0) { ctx.moveTo(margin, margin); ctx.lineTo(size - margin, margin); }
     else if (edge === 1) { ctx.moveTo(size - margin, margin); ctx.lineTo(size - margin, size - margin); }
     else if (edge === 2) { ctx.moveTo(size - margin, size - margin); ctx.lineTo(margin, size - margin); }
     else { ctx.moveTo(margin, size - margin); ctx.lineTo(margin, margin); }
-    ctx.strokeStyle = `hsla(30, 40%, 45%, 0.15)`;
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = 'hsla(35, 50%, 55%, 0.2)';
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([5, 5]);
     ctx.stroke();
     ctx.setLineDash([]);
   }
 
-  // Subtle sheen gradient
-  const sheen = ctx.createRadialGradient(size * 0.35, size * 0.35, 0, size * 0.5, size * 0.5, size * 0.7);
-  sheen.addColorStop(0, 'rgba(255, 200, 160, 0.07)');
-  sheen.addColorStop(1, 'rgba(0, 0, 0, 0.03)');
+  // Subtle highlight sheen
+  const sheen = ctx.createRadialGradient(size * 0.3, size * 0.3, 0, size * 0.5, size * 0.5, size * 0.7);
+  sheen.addColorStop(0, 'rgba(255, 200, 160, 0.09)');
+  sheen.addColorStop(1, 'rgba(0, 0, 0, 0.04)');
   ctx.fillStyle = sheen;
   ctx.fillRect(0, 0, size, size);
 
@@ -176,7 +215,6 @@ export function generatePaperTexture(): THREE.CanvasTexture {
   const { canvas, ctx } = createCanvas(size);
   const rand = seededRandom(789);
 
-  // Base paper color — warm cream
   ctx.fillStyle = '#d4b896';
   ctx.fillRect(0, 0, size, size);
 
@@ -197,7 +235,7 @@ export function generatePaperTexture(): THREE.CanvasTexture {
     ctx.stroke();
   }
 
-  // Subtle speckle spots
+  // Speckle spots
   for (let i = 0; i < 500; i++) {
     const x = rand() * size;
     const y = rand() * size;
@@ -209,7 +247,7 @@ export function generatePaperTexture(): THREE.CanvasTexture {
     ctx.fill();
   }
 
-  // Slight crumple/fold lines
+  // Crumple/fold lines
   for (let i = 0; i < 6; i++) {
     const startX = rand() * size;
     const startY = rand() * size;
@@ -223,7 +261,7 @@ export function generatePaperTexture(): THREE.CanvasTexture {
     ctx.stroke();
   }
 
-  // Warm aged-paper gradient
+  // Aged-paper gradient
   const aged = ctx.createRadialGradient(size * 0.5, size * 0.5, 0, size * 0.5, size * 0.5, size * 0.7);
   aged.addColorStop(0, 'rgba(255, 230, 190, 0.06)');
   aged.addColorStop(1, 'rgba(160, 120, 60, 0.05)');
@@ -247,7 +285,6 @@ export function generateBrushedMetalTexture(baseColor: string = '#c9952e'): THRE
   const { canvas, ctx } = createCanvas(size);
   const rand = seededRandom(456);
 
-  // Base color
   ctx.fillStyle = baseColor;
   ctx.fillRect(0, 0, size, size);
 
@@ -281,7 +318,7 @@ export function generateBrushedMetalTexture(baseColor: string = '#c9952e'): THRE
     ctx.stroke();
   }
 
-  // Specular highlight spot
+  // Specular highlight
   const spec = ctx.createRadialGradient(size * 0.35, size * 0.4, 0, size * 0.4, size * 0.45, size * 0.5);
   spec.addColorStop(0, 'rgba(255, 240, 180, 0.12)');
   spec.addColorStop(0.5, 'rgba(255, 220, 140, 0.04)');
@@ -297,12 +334,191 @@ export function generateBrushedMetalTexture(baseColor: string = '#c9952e'): THRE
   return texture;
 }
 
+export function generateCrystalTexture(): THREE.CanvasTexture {
+  const cached = textureCache.get('crystal');
+  if (cached) return cached;
+
+  const size = 512;
+  const { canvas, ctx } = createCanvas(size);
+
+  // Base: deep translucent blue
+  ctx.fillStyle = '#6a9ec8';
+  ctx.fillRect(0, 0, size, size);
+
+  // Per-pixel crystalline variation using noise
+  const imageData = ctx.getImageData(0, 0, size, size);
+  const pixels = imageData.data;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const idx = (y * size + x) * 4;
+      // Faceted look: sharp noise at multiple scales
+      const n1 = valueNoise(x / 40, y / 40, 500);
+      const n2 = valueNoise(x / 15, y / 15, 600);
+      // Step function to create faceted edges
+      const facet = Math.floor(n1 * 6) / 6;
+      const fine = (n2 - 0.5) * 20;
+      const variation = (facet - 0.5) * 50 + fine;
+
+      pixels[idx] = Math.max(0, Math.min(255, pixels[idx] + variation * 0.4));
+      pixels[idx + 1] = Math.max(0, Math.min(255, pixels[idx + 1] + variation * 0.6));
+      pixels[idx + 2] = Math.max(0, Math.min(255, pixels[idx + 2] + variation));
+    }
+  }
+  ctx.putImageData(imageData, 0, 0);
+
+  const rand = seededRandom(555);
+
+  // Prismatic light streaks (rainbow caustics)
+  for (let i = 0; i < 15; i++) {
+    const x1 = rand() * size;
+    const y1 = rand() * size;
+    const angle = rand() * Math.PI;
+    const length = 80 + rand() * 200;
+    const x2 = x1 + Math.cos(angle) * length;
+    const y2 = y1 + Math.sin(angle) * length;
+
+    const grad = ctx.createLinearGradient(x1, y1, x2, y2);
+    const hue = rand() * 60 + 180; // blue-cyan range
+    grad.addColorStop(0, `hsla(${hue}, 80%, 80%, 0)`);
+    grad.addColorStop(0.3, `hsla(${hue}, 70%, 85%, ${0.08 + rand() * 0.06})`);
+    grad.addColorStop(0.5, `hsla(${hue + 30}, 60%, 90%, ${0.10 + rand() * 0.05})`);
+    grad.addColorStop(0.7, `hsla(${hue + 60}, 70%, 85%, ${0.08 + rand() * 0.06})`);
+    grad.addColorStop(1, `hsla(${hue + 60}, 80%, 80%, 0)`);
+
+    ctx.fillStyle = grad;
+    ctx.save();
+    ctx.translate(x1, y1);
+    ctx.rotate(angle);
+    ctx.fillRect(0, -15, length, 30);
+    ctx.restore();
+  }
+
+  // Sharp facet edges
+  for (let i = 0; i < 25; i++) {
+    const x1 = rand() * size;
+    const y1 = rand() * size;
+    const x2 = x1 + (rand() - 0.5) * 200;
+    const y2 = y1 + (rand() - 0.5) * 200;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = `hsla(210, 60%, 90%, ${0.06 + rand() * 0.08})`;
+    ctx.lineWidth = 0.5 + rand() * 1;
+    ctx.stroke();
+  }
+
+  // Bright specular highlights
+  for (let i = 0; i < 5; i++) {
+    const cx = rand() * size;
+    const cy = rand() * size;
+    const r = 20 + rand() * 50;
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grad.addColorStop(0, `hsla(200, 80%, 95%, ${0.12 + rand() * 0.08})`);
+    grad.addColorStop(0.5, `hsla(210, 60%, 85%, ${0.04 + rand() * 0.03})`);
+    grad.addColorStop(1, 'hsla(210, 50%, 80%, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  textureCache.set('crystal', texture);
+  return texture;
+}
+
+export function generateGlassTexture(): THREE.CanvasTexture {
+  const cached = textureCache.get('glass');
+  if (cached) return cached;
+
+  const size = 512;
+  const { canvas, ctx } = createCanvas(size);
+
+  // Very light base — almost white with a hint of blue
+  ctx.fillStyle = '#dae8f0';
+  ctx.fillRect(0, 0, size, size);
+
+  // Per-pixel subtle refraction-like distortion
+  const imageData = ctx.getImageData(0, 0, size, size);
+  const pixels = imageData.data;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const idx = (y * size + x) * 4;
+      const n = fbmNoise(x / 50, y / 50, 3, 700);
+      const variation = (n - 0.5) * 18;
+      pixels[idx] = Math.max(0, Math.min(255, pixels[idx] + variation));
+      pixels[idx + 1] = Math.max(0, Math.min(255, pixels[idx + 1] + variation * 1.1));
+      pixels[idx + 2] = Math.max(0, Math.min(255, pixels[idx + 2] + variation * 1.2));
+    }
+  }
+  ctx.putImageData(imageData, 0, 0);
+
+  const rand = seededRandom(777);
+
+  // Faint smudges/fingerprints
+  for (let i = 0; i < 8; i++) {
+    const cx = rand() * size;
+    const cy = rand() * size;
+    const r = 30 + rand() * 60;
+    const grad = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, r);
+    grad.addColorStop(0, `hsla(210, 20%, 88%, ${0.04 + rand() * 0.03})`);
+    grad.addColorStop(1, 'hsla(210, 10%, 90%, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, r, r * (0.6 + rand() * 0.4), rand() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Sharp light reflections (window-like caustics)
+  for (let i = 0; i < 6; i++) {
+    const x1 = rand() * size;
+    const y1 = rand() * size;
+    const angle = -0.3 + rand() * 0.6; // mostly horizontal
+    const length = 100 + rand() * 250;
+    const width = 3 + rand() * 8;
+    const x2 = x1 + Math.cos(angle) * length;
+    const y2 = y1 + Math.sin(angle) * length;
+
+    const grad = ctx.createLinearGradient(x1, y1, x2, y2);
+    grad.addColorStop(0, 'hsla(0, 0%, 100%, 0)');
+    grad.addColorStop(0.3, `hsla(0, 0%, 100%, ${0.06 + rand() * 0.05})`);
+    grad.addColorStop(0.5, `hsla(0, 0%, 100%, ${0.10 + rand() * 0.05})`);
+    grad.addColorStop(0.7, `hsla(0, 0%, 100%, ${0.06 + rand() * 0.05})`);
+    grad.addColorStop(1, 'hsla(0, 0%, 100%, 0)');
+
+    ctx.fillStyle = grad;
+    ctx.save();
+    ctx.translate(x1, y1);
+    ctx.rotate(angle);
+    ctx.fillRect(0, -width / 2, length, width);
+    ctx.restore();
+  }
+
+  // Edge highlight — beveled glass edge effect
+  const edgeGrad = ctx.createLinearGradient(0, 0, size, size);
+  edgeGrad.addColorStop(0, 'rgba(255, 255, 255, 0.06)');
+  edgeGrad.addColorStop(0.5, 'rgba(200, 220, 240, 0.02)');
+  edgeGrad.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
+  ctx.fillStyle = edgeGrad;
+  ctx.fillRect(0, 0, size, size);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  textureCache.set('glass', texture);
+  return texture;
+}
+
 export function getProceduralTexture(textureType: string, baseColor?: string): THREE.CanvasTexture | null {
   switch (textureType) {
     case 'wood': return generateWoodTexture();
     case 'leather': return generateLeatherTexture();
     case 'paper': return generatePaperTexture();
     case 'brushed-metal': return generateBrushedMetalTexture(baseColor);
+    case 'crystal': return generateCrystalTexture();
+    case 'glass': return generateGlassTexture();
     default: return null;
   }
 }
